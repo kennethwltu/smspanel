@@ -12,11 +12,7 @@ Then in your application, set HKT_BASE_URL to the mock server URL:
 """
 
 from flask import Flask, request, jsonify
-import logging
 import os
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -40,24 +36,15 @@ def mock_hkt_gateway():
     sender = data.get("sender", "")
     msg_utf8 = data.get("msg_utf8", "")
 
-    logger.info("[Mock HKT] Received SMS request:")
-    logger.info(f"  Application: {application}")
-    logger.info(f"  Recipient: {mrt}")
-    logger.info(f"  Sender: {sender}")
-    logger.info(f"  Message: {msg_utf8}")
+    # Dump message content to stdout
+    print(f"[Mock HKT] Message: {msg_utf8}")
 
-    # Simulate failure for specific test scenarios
-    # You can add test phone numbers that should fail
-    FAIL_TEST_NUMBERS = os.getenv("MOCK_FAIL_NUMBERS", "").split(",")
-    if mrt in FAIL_TEST_NUMBERS:
-        logger.warning(f"[Mock HKT] Simulating failure for recipient: {mrt}")
-        return "ERROR: Failed to send SMS", 400
+    # Return 401 if "error" is in the message
+    if "error" in msg_utf8.lower():
+        return "401 Unauthorized", 401
 
-    # Simulate success response (matches HKT API format)
-    # The real HKT API returns a plain text response with status
-    response_text = "OK: Message sent successfully"
-    logger.info(f"[Mock HKT] Success: {response_text}")
-    return response_text, 200
+    # Return 200 OK for normal requests
+    return "200 OK", 200
 
 
 @app.route("/health", methods=["GET"])
@@ -72,8 +59,8 @@ if __name__ == "__main__":
     host = os.getenv("MOCK_HKT_HOST", "127.0.0.1")
     debug = os.getenv("MOCK_HKT_DEBUG", "false").lower() == "true"
 
-    logger.info(f"Starting Mock HKT SMS API on http://{host}:{port}")
-    logger.info(f"Gateway endpoint: http://{host}:{port}/gateway/gateway.jsp")
-    logger.info(f"Health check: http://{host}:{port}/health")
+    print(f"Starting Mock HKT SMS API on http://{host}:{port}")
+    print(f"Gateway endpoint: http://{host}:{port}/gateway/gateway.jsp")
+    print(f"Health check: http://{host}:{port}/health")
 
     app.run(host=host, port=port, debug=debug)
