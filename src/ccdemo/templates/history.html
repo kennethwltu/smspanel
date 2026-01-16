@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Message History - SMS Application{% endblock %}
+
+{% block content %}
+<div class="history">
+    <div class="history-header">
+        <h1>Message History</h1>
+        <a href="{{ url_for('web.compose') }}" class="btn btn-primary">Compose New SMS</a>
+    </div>
+
+    <form method="GET" class="search-form">
+        <div class="search-filters">
+            <input
+                type="text"
+                name="search"
+                value="{{ search }}"
+                placeholder="Search messages..."
+                class="search-input"
+            >
+            <select name="status" class="filter-select">
+                <option value="">All Status</option>
+                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="sent" {% if status_filter == 'sent' %}selected{% endif %}>Sent</option>
+                <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+                <option value="partial" {% if status_filter == 'partial' %}selected{% endif %}>Partial</option>
+            </select>
+            <button type="submit" class="btn btn-secondary">Filter</button>
+            {% if search or status_filter %}
+                <a href="{{ url_for('web.history') }}" class="btn btn-small">Clear</a>
+            {% endif %}
+        </div>
+    </form>
+
+    {% if messages.items %}
+        <div class="message-list">
+            {% for msg in messages.items %}
+                <div class="message-card">
+                    <div class="message-header">
+                        <span class="status status-{{ msg.status }}">{{ msg.status|upper }}</span>
+                        <span class="timestamp">{{ msg.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                    </div>
+                    <div class="message-content">
+                        {{ msg.content }}
+                    </div>
+                    <div class="message-footer">
+                        <span class="recipient-count">
+                            {{ msg.recipient_count }} recipient(s)
+                            {% if msg.success_count > 0 %}
+                                <span class="success">({{ msg.success_count }} sent)</span>
+                            {% endif %}
+                            {% if msg.failed_count > 0 %}
+                                <span class="failed">({{ msg.failed_count }} failed)</span>
+                            {% endif %}
+                        </span>
+                        <a href="{{ url_for('web.sms_detail', message_id=msg.id) }}" class="btn btn-small">View Details</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="pagination">
+            {% if messages.has_prev %}
+                <a href="{{ url_for('web.history', page=messages.prev_num, search=search, status=status_filter) }}" class="btn btn-small">Previous</a>
+            {% endif %}
+            <span>Page {{ messages.page }} of {{ messages.pages }} ({{ messages.total }} total)</span>
+            {% if messages.has_next %}
+                <a href="{{ url_for('web.history', page=messages.next_num, search=search, status=status_filter) }}" class="btn btn-small">Next</a>
+            {% endif %}
+        </div>
+    {% else %}
+        <p class="empty-state">
+            {% if search or status_filter %}
+                No messages found matching your criteria. <a href="{{ url_for('web.history') }}">Clear filters</a>
+            {% else %}
+                No messages yet. <a href="{{ url_for('web.compose') }}">Send your first SMS!</a>
+            {% endif %}
+        </p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - SMS Application{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="dashboard-header">
+        <h1>Welcome, {{ current_user.username }}!</h1>
+        <a href="{{ url_for('web.compose') }}" class="btn btn-primary">Compose New SMS</a>
+    </div>
+
+    <div class="stats">
+        <div class="stat-card">
+            <h2>{{ total_messages }}</h2>
+            <p>Total Messages</p>
+        </div>
+        <div class="stat-card">
+            <h2>{{ total_sent }}</h2>
+            <p>Sent Successfully</p>
+        </div>
+    </div>
+
+    <div class="recent-messages">
+        <h2>Recent Messages</h2>
+        {% if messages %}
+            <div class="message-list">
+                {% for msg in messages %}
+                    <div class="message-card">
+                        <div class="message-header">
+                            <span class="status status-{{ msg.status }}">{{ msg.status|upper }}</span>
+                            <span class="timestamp">{{ msg.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+                        <div class="message-content">
+                            {{ msg.content }}
+                        </div>
+                        <div class="message-footer">
+                            <span class="recipient-count">{{ msg.recipient_count }} recipient(s)</span>
+                            <a href="{{ url_for('web.sms_detail', message_id=msg.id) }}" class="btn btn-small">View Details</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="empty-state">No messages yet. <a href="{{ url_for('web.compose') }}">Send your first SMS!</a></p>
+        {% endif %}
+    </div>
+
+    <div class="dashboard-footer">
+        <a href="{{ url_for('web.history') }}" class="btn btn-secondary">View All History</a>
+    </div>
+</div>
+{% endblock %}

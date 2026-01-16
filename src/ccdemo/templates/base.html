@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SMS Application{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="{{ url_for('web.dashboard') }}" class="nav-brand">SMS App</a>
+            {% if current_user.is_authenticated %}
+            <div class="nav-links">
+                <a href="{{ url_for('web.dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('web.compose') }}">Compose</a>
+                <a href="{{ url_for('web.history') }}">History</a>
+                <a href="{{ url_for('web.logout') }}" class="logout">Logout</a>
+            </div>
+            {% else %}
+            <div class="nav-links">
+                <a href="{{ url_for('web.login') }}">Login</a>
+                <a href="{{ url_for('web.register') }}">Register</a>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container main">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer>
+        <div class="container">
+            &copy; 2026 SMS Application
+        </div>
+    </footer>
+</body>
+</html>

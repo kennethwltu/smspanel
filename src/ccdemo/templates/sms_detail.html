@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Message Details - SMS Application{% endblock %}
+
+{% block content %}
+<div class="sms-detail">
+    <div class="detail-header">
+        <a href="{{ url_for('web.history') }}" class="btn btn-small">&larr; Back to History</a>
+        <h1>Message Details</h1>
+    </div>
+
+    <div class="message-info">
+        <div class="info-section">
+            <h2>Message</h2>
+            <p class="message-content">{{ message.content }}</p>
+            <div class="info-row">
+                <span>Status:</span>
+                <span class="status status-{{ message.status }}">{{ message.status|upper }}</span>
+            </div>
+            <div class="info-row">
+                <span>Created:</span>
+                <span>{{ message.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+            </div>
+            {% if message.sent_at %}
+                <div class="info-row">
+                    <span>Sent:</span>
+                    <span>{{ message.sent_at.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                </div>
+            {% endif %}
+            <div class="info-row">
+                <span>Total Recipients:</span>
+                <span>{{ message.recipient_count }}</span>
+            </div>
+            <div class="info-row">
+                <span>Successful:</span>
+                <span class="success">{{ message.success_count }}</span>
+            </div>
+            <div class="info-row">
+                <span>Failed:</span>
+                <span class="failed">{{ message.failed_count }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="recipients-list">
+        <h2>Recipients</h2>
+        <div class="recipient-table">
+            <div class="table-header">
+                <div class="table-cell">Phone Number</div>
+                <div class="table-cell">Status</div>
+                <div class="table-cell">Error Message</div>
+            </div>
+            {% for recipient in recipients %}
+                <div class="table-row">
+                    <div class="table-cell">{{ recipient.phone }}</div>
+                    <div class="table-cell">
+                        <span class="status status-{{ recipient.status }}">{{ recipient.status|upper }}</span>
+                    </div>
+                    <div class="table-cell error-cell">{{ recipient.error_message or '-' }}</div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

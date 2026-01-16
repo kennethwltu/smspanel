@@ -39,3 +39,7 @@ htmlcov/
 
 # Distribution
 *.whl
+
+# Environment
+.env
+*.db
