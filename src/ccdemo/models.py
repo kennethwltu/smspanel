@@ -1,6 +1,6 @@
 """Database models for the SMS application."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 import secrets
@@ -17,7 +17,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     api_key = db.Column(db.String(64), unique=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
     messages = db.relationship("Message", backref="user", lazy="dynamic", cascade="all, delete-orphan")
 
@@ -47,7 +47,7 @@ class Message(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     content = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(20), default="pending", index=True)  # pending, sent, failed
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), index=True)
     sent_at = db.Column(db.DateTime, nullable=True)
     hkt_response = db.Column(db.Text, nullable=True)
 

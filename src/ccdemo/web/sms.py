@@ -1,6 +1,7 @@
 """Web UI SMS routes."""
 
-from datetime import datetime
+import re
+from datetime import datetime, timezone
 from flask import Blueprint, request, render_template, redirect, url_for, flash
 from flask_login import login_required, current_user
 
@@ -9,6 +10,9 @@ from ..models import Message, Recipient
 from ..services.hkt_sms import HKTSMSService
 
 web_sms_bp = Blueprint("web_sms", __name__)
+
+# Phone number regex: 4 digits, optional space, 4 digits (e.g., 1234 5678 or 12345678)
+PHONE_REGEX = re.compile(r"^\d{4}\s?\d{4}$")
 
 
 @web_sms_bp.route("/")
@@ -38,19 +42,40 @@ def dashboard():
 def compose():
     """Compose and send a new SMS message."""
     if request.method == "POST":
-        content = request.form.get("content")
-        recipients_input = request.form.get("recipients")
+        content = request.form.get("content", "").strip()
+        recipients_input = request.form.get("recipients", "").strip()
 
-        if not content or not recipients_input:
-            flash("Message content and recipients are required.", "error")
+        # Message field is mandatory
+        if not content:
+            flash("Message content is required.", "error")
             return render_template("compose.html", content=content, recipients=recipients_input)
 
-        # Parse recipients (comma or newline separated)
-        recipients = [r.strip() for r in recipients_input.replace("\n", ",").split(",") if r.strip()]
+        # Parse recipients (one per row, ignore empty lines)
+        recipients = [r.strip() for r in recipients_input.split("\n") if r.strip()]
 
+        # Recipients must have at least one number
         if not recipients:
             flash("At least one recipient is required.", "error")
             return render_template("compose.html", content=content, recipients=recipients_input)
+
+        # Validate each phone number matches regex \d{4}\s?\d{4}
+        invalid_numbers = []
+        valid_recipients = []
+        for r in recipients:
+            if not PHONE_REGEX.match(r):
+                invalid_numbers.append(r)
+            else:
+                valid_recipients.append(r)
+
+        if invalid_numbers:
+            flash(
+                f"Invalid phone number format: {', '.join(invalid_numbers)}. "
+                "Each number must be in format: 4 digits, optional space, 4 digits (e.g., 1234 5678 or 12345678).",
+                "error"
+            )
+            return render_template("compose.html", content=content, recipients=recipients_input)
+
+        recipients = valid_recipients
 
         # Create message record
         message = Message(user_id=current_user.id, content=content, status="pending")
@@ -72,7 +97,7 @@ def compose():
         all_sent = result["success"]
         message.status = "sent" if all_sent else "partial" if result["successful"] > 0 else "failed"
         if all_sent:
-            message.sent_at = datetime.utcnow()
+            message.sent_at = datetime.now(timezone.utc)
 
         # Update individual recipient statuses
         for i, recipient_result in enumerate(result["results"]):

@@ -12,7 +12,7 @@ web_auth_bp = Blueprint("web_auth", __name__)
 @login_manager.user_loader
 def load_user(user_id: int):
     """Load user by ID for Flask-Login."""
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 
 @web_auth_bp.route("/register", methods=["GET", "POST"])

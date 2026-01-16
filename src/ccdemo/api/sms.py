@@ -1,7 +1,7 @@
 """API SMS endpoints."""
 
 import jwt
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required
 
@@ -28,7 +28,7 @@ def get_user_from_token() -> User | None:
     try:
         payload = jwt.decode(token, current_app.config["JWT_SECRET_KEY"], algorithms=["HS256"])
         user_id = payload.get("user_id")
-        return User.query.get(user_id)
+        return db.session.get(User, user_id)
     except jwt.InvalidTokenError:
         return None
 
@@ -117,7 +117,7 @@ def send_sms() -> tuple:
     # Update records based on result
     if result["success"]:
         message.status = "sent"
-        message.sent_at = datetime.utcnow()
+        message.sent_at = datetime.now(timezone.utc)
         message.hkt_response = result.get("response_text", "")
         recipient_record.status = "sent"
     else:
@@ -183,7 +183,7 @@ def send_bulk_sms() -> tuple:
     all_sent = result["success"]
     message.status = "sent" if all_sent else "partial" if result["successful"] > 0 else "failed"
     if all_sent:
-        message.sent_at = datetime.utcnow()
+        message.sent_at = datetime.now(timezone.utc)
 
     # Update individual recipient statuses
     for i, recipient_result in enumerate(result["results"]):
