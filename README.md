@@ -1,15 +1,91 @@
 # ccdemo
 
-A Python SMS management application with web UI and REST API.
+A Python SMS management application with web UI and REST API for sending and tracking SMS messages via HKT SMS gateway.
+
+## Objectives
+
+This application provides a comprehensive SMS management system with the following objectives:
+
+1. **SMS Composition & Delivery** - Compose and send SMS messages to single or multiple recipients with automatic format validation
+2. **Message Tracking** - Track delivery status (pending, sent, failed) for each message and individual recipients
+3. **User Management** - Admin interface for complete user lifecycle management (create, modify password, enable/disable, delete)
+4. **API Access** - RESTful API for programmatic SMS sending with token-based authentication
+5. **Hong Kong Integration** - Built-in timezone conversion (UTC to HKT) and HKT SMS gateway integration
+6. **Testing Support** - Mock SMS provider for local development and testing
 
 ## Features
 
 - **SMS Composition & Sending**: Create and send SMS messages to single or multiple recipients
-- **Message History**: Track sent messages with status (pending, sent, failed)
+- **Message History**: Track sent messages with status (pending, sent, failed, partial)
 - **User Management**: Admin interface for user CRUD operations
 - **Authentication**: Web login and API token-based authentication
 - **Hong Kong Time**: Built-in timezone conversion (UTC to HKT)
 - **Mock HKT API**: Testing mode simulates HKT SMS gateway
+
+## System Functions
+
+### SMS Management
+- **Compose**: Create new SMS messages with content and recipients
+- **Send**: Send SMS via HKT SMS gateway (real or mock)
+- **Track**: Monitor delivery status per message and per recipient
+- **History**: View and search past messages with filters
+- **Detail**: View full message details including recipient status
+
+### User Management (Admin Only)
+- **Create**: Add new users with admin privileges
+- **Password Change**: Update user passwords
+- **Enable/Disable**: Toggle user account status
+- **Delete**: Remove users (with self-protection)
+- **Token Management**: Regenerate API tokens for users
+
+### Authentication
+- **Web Login**: Session-based authentication for web UI
+- **API Token**: Bearer token authentication for REST API
+- **Auto-Admin**: Default admin account created on first run
+
+## Web Endpoints
+
+| Route | Method | Auth | Description |
+|-------|---------|--------|-------------|
+| `/login` | GET, POST | Login page and form submission |
+| `/logout` | GET | User logout |
+| `/` | GET | Required | Dashboard with recent messages |
+| `/compose` | GET, POST | Required | Compose and send SMS |
+| `/history` | GET | Required | Message history with search/filter |
+| `/history/<id>` | GET | Required | View message details |
+| `/admin/users` | GET | Required, Admin | List all users |
+| `/admin/users/create` | GET, POST | Required, Admin | Create new user |
+| `/admin/users/<id>/password` | GET, POST | Required, Admin | Change user password |
+| `/admin/users/<id>/toggle` | POST | Required, Admin | Enable/disable user |
+| `/admin/users/<id>/delete` | GET, POST | Required, Admin | Delete user |
+| `/admin/users/<id>/regenerate_token` | POST | Required, Admin | Regenerate API token |
+
+## API Endpoints
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|--------|-------------|
+| `/api/sms` | GET | Token Required | List messages (paginated) |
+| `/api/sms` | POST | Token Required | Send single SMS |
+| `/api/sms/send-bulk` | POST | Token Required | Send bulk SMS |
+| `/api/sms/<id>` | GET | Token Required | Get message details |
+| `/api/sms/<id>/recipients` | GET | Token Required | Get message recipients |
+
+### API Request Example
+
+**Login:**
+```bash
+curl -X POST http://localhost:3570/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"SMSadmin","password":"SMSpass#12"}'
+```
+
+**Send SMS:**
+```bash
+curl -X POST http://localhost:3570/api/sms \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"recipient":"1234 5678","content":"Hello World"}'
+```
 
 ## Development Setup
 
@@ -21,7 +97,7 @@ source .venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the app
+# Run app
 python run.py
 ```
 
@@ -29,7 +105,7 @@ The app will start on `http://localhost:3570`
 
 ## Mock SMS Provider
 
-To run the mock HKT SMS provider (required for testing):
+To run mock HKT SMS provider (required for testing):
 
 ```bash
 source .venv/bin/activate
@@ -37,6 +113,166 @@ python scripts/mock_hkt_api.py
 ```
 
 The mock server runs on `http://127.0.0.1:5555/gateway/gateway.jsp`
+
+## Deployment Procedure
+
+### Prerequisites
+
+1. **Python 3.12+** installed on target server
+2. **Environment variables** configured (see Configuration section)
+3. **Production database** location secured
+4. **HKT SMS gateway credentials** obtained
+
+### Deployment Steps
+
+#### 1. Prepare Production Environment
+
+```bash
+# Clone repository
+git clone <repo-url>
+cd ccdemo
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+#### 2. Configure Environment Variables
+
+Create `.env` file in project root:
+
+```bash
+# Flask Configuration
+FLASK_ENV=production
+SECRET_KEY=<generate-strong-random-key>
+JWT_SECRET_KEY=<generate-strong-random-key>
+
+# Database
+DATABASE_URL=sqlite:///instance/sms.db
+
+# HKT SMS Gateway (production)
+HKT_BASE_URL=https://cst01.1010.com.hk/gateway/gateway.jsp
+HKT_APPLICATION_ID=YourAppID
+HKT_SENDER_NUMBER=YourSenderNumber
+
+# API Key (for alternative auth)
+API_KEY=<your-api-key>
+```
+
+Generate secure keys using:
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+#### 3. Initialize Database
+
+```bash
+# Run app once to create database and admin user
+FLASK_ENV=production python run.py
+# Then press Ctrl+C to stop
+```
+
+**Important**: After first run:
+- Change the default admin password (`SMSpass#12`)
+- Generate a new admin API token via admin panel
+
+#### 4. Production Server Setup
+
+**Option A: Using Gunicorn (Recommended)**
+
+```bash
+# Install gunicorn
+pip install gunicorn
+
+# Run with gunicorn
+gunicorn -w 4 -b 0.0.0.0:3570 run:app
+```
+
+**Option B: Using uWSGI**
+
+```bash
+# Install uwsgi
+pip install uwsgi
+
+# Run with uwsgi
+uwsgi --http 0.0.0.0:3570 --wsgi-file run.py --callable app
+```
+
+**Option C: Using systemd service**
+
+Create `/etc/systemd/system/ccdemo.service`:
+
+```ini
+[Unit]
+Description=SMS Application
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/path/to/ccdemo
+Environment="PATH=/path/to/ccdemo/.venv/bin"
+ExecStart=/path/to/ccdemo/.venv/bin/gunicorn -w 4 -b 0.0.0.0:3570 run:app
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+```bash
+sudo systemctl enable ccdemo
+sudo systemctl start ccdemo
+sudo systemctl status ccdemo
+```
+
+#### 5. Reverse Proxy Configuration (Optional)
+
+**Nginx:**
+
+```nginx
+server {
+    listen 80;
+    server_name sms.example.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:3570;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+#### 6. SSL/TLS Configuration (Optional for Production)
+
+Use certbot for free SSL:
+
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d sms.example.com
+```
+
+#### 7. Database Backup Setup
+
+Create cron job for daily backups:
+
+```bash
+# Edit crontab
+crontab -e
+
+# Add daily backup at 2 AM
+0 2 * * * cp /path/to/ccdemo/instance/sms.db /backups/sms_$(date +\%Y\%m\%d).db
+```
+
+#### 8. Monitoring and Logging
+
+- **Application logs**: Check stdout/stderr for errors
+- **Database integrity**: Run periodic checks
+- **Disk space**: Monitor `instance/` directory
 
 ## Default Admin Account
 
@@ -49,47 +285,7 @@ A fixed admin account is created on first run:
 | Role | Admin |
 | Status | Active |
 
-Use this account to access the Admin panel for user management.
-
-## API Usage
-
-### Login
-
-```bash
-curl -X POST http://localhost:3570/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"SMSadmin","password":"SMSpass#12"}'
-```
-
-Response:
-```json
-{
-  "access_token": "k99KnlhEmot8evXjoucEmoMBAkrjeDFowzdNKLoZDfATi4Dj47...",
-  "user_id": 1,
-  "username": "SMSadmin"
-}
-```
-
-### Authenticated Request
-
-Use the `access_token` in the Authorization header:
-
-```bash
-curl -H "Authorization: Bearer <token>" \
-  http://localhost:3570/api/sms
-```
-
-### API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/auth/login` | POST | Login and get API token |
-| `/api/auth/logout` | POST | Logout |
-| `/api/sms` | GET | List messages |
-| `/api/sms` | POST | Send single SMS |
-| `/api/sms/send-bulk` | POST | Send bulk SMS |
-| `/api/sms/<id>` | GET | Get message details |
-| `/api/sms/<id>/recipients` | GET | Get message recipients |
+**Important**: Change this password immediately after first deployment!
 
 ## Testing
 
@@ -117,44 +313,63 @@ ccdemo/
 ├── src/                    # Source code
 │   └── ccdemo/
 │       ├── models.py        # Database models (User, Message, Recipient)
+│       ├── config.py       # Configuration classes
+│       ├── __init__.py     # App factory
 │       ├── api/            # REST API endpoints
-│   │   ├── auth.py        # Authentication
-│   │   └── sms.py         # SMS endpoints
-│   ├── web/            # Web UI
-│   │   ├── auth.py        # Login/register
-│   │   ├── sms.py         # SMS composition/history
-│   │   ├── admin.py       # User management (admin only)
-│   │   └── templates/
-│   │       ├── admin/         # Admin templates
-│   │       ├── *.html        # Other templates
-│       ├── services/       # Business logic
-│       └── static/         # CSS, JS assets
+│       │   ├── __init__.py
+│       │   └── sms.py     # SMS endpoints
+│       ├── web/            # Web UI
+│       │   ├── __init__.py
+│       │   ├── auth.py     # Login/logout
+│       │   ├── sms.py      # SMS composition/history
+│       │   └── admin.py    # User management (admin only)
+│       ├── services/        # Business logic
+│       │   └── hkt_sms.py # HKT SMS service
+│       └── templates/      # Jinja2 templates
+│           ├── admin/
+│           ├── *.html
+├── instance/               # SQLite database (auto-created)
+├── static/                # CSS, JS assets
 ├── tests/                 # Pytest tests
 ├── scripts/               # Utility scripts
+│   └── mock_hkt_api.py
+├── run.py                 # Application entry point
 └── pyproject.toml         # Project config
 ```
 
 ## Database
 
-SQLite database (`sms.db`) is auto-created on first run.
+SQLite database (`sms.db`) is auto-created in `instance/` directory on first run.
 
-To reset the database:
+**Reset database:**
 ```bash
 rm instance/sms.db
-# Then restart the app
+# Then restart app
 ```
 
 ## Configuration
 
 Configuration is in `src/ccdemo/config.py`:
 
-| Setting | Description | Default |
-|---------|-------------|----------|
-| `SECRET_KEY` | Flask session key | dev-secret-key |
-| `DATABASE_URL` | Database path | sqlite:///sms.db |
-| `JWT_SECRET_KEY` | Token signing key | dev-jwt-key |
-| `HKT_BASE_URL` | HKT SMS gateway | Mock server URL |
-| `HKT_APPLICATION_ID` | HKT app ID | LabourDept |
-| `HKT_SENDER_NUMBER` | HKT sender number | 852520702793127 |
+| Setting | Description | Default | Environment Variable |
+|---------|-------------|----------|---------------------|
+| `SECRET_KEY` | Flask session key | dev-secret-key | `SECRET_KEY` |
+| `DATABASE_URL` | Database path | sqlite:///sms.db | `DATABASE_URL` |
+| `JWT_SECRET_KEY` | Token signing key | dev-jwt-key | `JWT_SECRET_KEY` |
+| `HKT_BASE_URL` | HKT SMS gateway | Mock server URL | `HKT_BASE_URL` |
+| `HKT_APPLICATION_ID` | HKT app ID | LabourDept | `HKT_APPLICATION_ID` |
+| `HKT_SENDER_NUMBER` | HKT sender number | 852520702793127 | `HKT_SENDER_NUMBER` |
+| `API_KEY` | REST auth fallback | default-api-key | `API_KEY` |
 
-Set via environment variables or `.env` file.
+## Phone Number Format
+
+Hong Kong phone numbers must match format: `4 digits, optional space, 4 digits`
+
+**Valid formats:**
+- `1234 5678`
+- `12345678`
+
+**Invalid formats:**
+- `1234-5678`
+- `123456789`
+- `12 3456`
