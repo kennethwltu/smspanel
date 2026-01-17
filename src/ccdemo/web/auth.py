@@ -37,7 +37,7 @@ def register():
 
         user = User(username=username)
         user.set_password(password)
-        user.api_key = User.generate_api_key()
+        user.token = User.generate_token()
 
         db.session.add(user)
         db.session.commit()

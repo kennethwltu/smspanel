@@ -5,7 +5,7 @@
   echo "=== Login ==="
   RESP=$(curl -s -X POST $BASE_URL/auth/login \
     -H "Content-Type: application/json" \
-    -d '{"username":"UATadmin","password":"xuuuuuuu"}')
+    -d '{"username":"ABC","password":"xuuuuuuu"}')
   TOKEN=$(echo $RESP | jq -r '.access_token')
   echo "With wrong password Token: $TOKEN"
 
@@ -13,7 +13,7 @@
   echo "=== Login ==="
   RESP=$(curl -s -X POST $BASE_URL/auth/login \
     -H "Content-Type: application/json" \
-    -d '{"username":"UATadmin","password":"uuuuuuuu"}')
+    -d '{"username":"ABC","password":"uuuuuuuu"}')
   TOKEN=$(echo $RESP | jq -r '.access_token')
   echo "Token: $TOKEN"
 

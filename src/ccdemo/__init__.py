@@ -57,4 +57,20 @@ def create_app(config_name: str = "default") -> Flask:
     # Register custom template filters
     app.jinja_env.filters["hkt"] = format_hkt
 
+    # Initialize admin account if it doesn't exist
+    with app.app_context():
+        db.create_all()  # Create all tables first
+        from .models import User
+
+        admin_user = User.query.filter_by(username="SMSadmin").first()
+        if admin_user is None:
+            admin = User(username="SMSadmin")
+            admin.set_password("SMSpass#12")
+            admin.token = User.generate_token()
+            admin.is_admin = True
+            admin.is_active = True
+
+            db.session.add(admin)
+            db.session.commit()
+
     return app

@@ -12,7 +12,11 @@
       "Bash(git checkout:*)",
       "Bash(ruff format:*)",
       "Bash(ruff check .)",
-      "Bash(ruff check . --fix)"
+      "Bash(ruff check . --fix)",
+      "Skill(superpowers:executing-plans)",
+      "Bash(source:*)",
+      "Bash(python:*)",
+      "Bash(wc:*)"
     ]
   }
 }

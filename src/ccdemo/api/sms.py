@@ -1,8 +1,7 @@
 """API SMS endpoints."""
 
-import jwt
 from datetime import datetime, timezone
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify
 
 from .. import db
 from ..models import User, Message, Recipient
@@ -12,7 +11,7 @@ api_sms_bp = Blueprint("api_sms", __name__)
 
 
 def get_user_from_token() -> User | None:
-    """Get user from JWT token.
+    """Get user from API token.
 
     Returns:
         User object or None if invalid.
@@ -24,12 +23,7 @@ def get_user_from_token() -> User | None:
 
     token = auth_header.split(" ")[1]
 
-    try:
-        payload = jwt.decode(token, current_app.config["JWT_SECRET_KEY"], algorithms=["HS256"])
-        user_id = payload.get("user_id")
-        return db.session.get(User, user_id)
-    except jwt.InvalidTokenError:
-        return None
+    return User.query.filter_by(token=token).first()
 
 
 @api_sms_bp.route("/sms", methods=["GET"])

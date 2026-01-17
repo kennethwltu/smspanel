@@ -9,12 +9,20 @@
 <body>
     <nav class="navbar">
         <div class="container">
-            <a href="{{ url_for('web.web_sms.dashboard') }}" class="nav-brand">SMS App</a>
+            <div class="nav-brand">
+                <a href="{{ url_for('web.web_sms.dashboard') }}">SMS App</a>
+                {% if current_user.is_authenticated %}
+                <span class="current-user">{{ current_user.username }}</span>
+                {% endif %}
+            </div>
             {% if current_user.is_authenticated %}
             <div class="nav-links">
                 <a href="{{ url_for('web.web_sms.dashboard') }}">Dashboard</a>
                 <a href="{{ url_for('web.web_sms.compose') }}">Compose</a>
                 <a href="{{ url_for('web.web_sms.history') }}">History</a>
+                {% if current_user.is_admin %}
+                <a href="{{ url_for('web.web_admin.users') }}" class="admin-link">Admin</a>
+                {% endif %}
                 <a href="{{ url_for('web.web_auth.logout') }}" class="logout">Logout</a>
             </div>
             {% else %}

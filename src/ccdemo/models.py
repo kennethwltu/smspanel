@@ -16,7 +16,9 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    api_key = db.Column(db.String(64), unique=True, nullable=False)
+    token = db.Column(db.String(64), unique=True, nullable=True)
+    is_admin = db.Column(db.Boolean, default=False, nullable=False)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
     messages = db.relationship(
@@ -32,9 +34,13 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
     @staticmethod
-    def generate_api_key() -> str:
-        """Generate a random API key."""
-        return secrets.token_urlsafe(32)
+    def generate_token() -> str:
+        """Generate a random API token.
+
+        Returns:
+            Random 64-character URL-safe token.
+        """
+        return secrets.token_urlsafe(48)
 
     def __repr__(self) -> str:
         return f"<User {self.username}>"

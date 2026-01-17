@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - SMS Application{% endblock %}
+
+{% block content %}
+<div class="admin-users">
+    <div class="admin-header">
+        <h1>User Management</h1>
+        <a href="{{ url_for('web.web_admin.create_user') }}" class="btn btn-primary">Create New User</a>
+    </div>
+
+    <div class="user-list">
+        {% if users %}
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Admin</th>
+                        <th>Active</th>
+                        <th>API Token</th>
+                        <th>Created At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr class="user-row">
+                        <td>{{ user.username }}</td>
+                        <td>
+                            <span class="status {{ 'status-success' if user.is_admin else 'status-default' }}">
+                                {{ 'Admin' if user.is_admin else 'User' }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status {{ 'status-success' if user.is_active else 'status-error' }}">
+                                {{ 'Active' if user.is_active else 'Disabled' }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if user.token %}
+                                <div class="token-display">
+                                    <code class="token-text">{{ user.token[:40] }}...</code>
+                                    <button class="btn btn-small btn-copy" onclick="copyToClipboard('{{ user.token }}', this)" title="Copy full token">Copy</button>
+                                </div>
+                            {% else %}
+                                <span class="text-muted">No token</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.created_at|hkt }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{{ url_for('web.web_admin.change_password', user_id=user.id) }}" class="btn btn-small">Password</a>
+                                {% if user.id != current_user.id %}
+                                    <form action="{{ url_for('web.web_admin.toggle_active', user_id=user.id) }}" method="post" style="display: inline;">
+                                        <button type="submit" class="btn btn-small {{ 'btn-warning' if user.is_active else 'btn-success' }}">
+                                            {{ 'Disable' if user.is_active else 'Enable' }}
+                                        </button>
+                                    </form>
+                                    <a href="{{ url_for('web.web_admin.delete_user', user_id=user.id) }}" class="btn btn-small btn-danger">Delete</a>
+                                {% endif %}
+                                <form action="{{ url_for('web.web_admin.regenerate_token', user_id=user.id) }}" method="post" style="display: inline;">
+                                    <button type="submit" class="btn btn-small btn-secondary">Regenerate Token</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="empty-state">No users found. <a href="{{ url_for('web.web_admin.create_user') }}">Create your first user!</a></p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function copyToClipboard(text, button) {
+    navigator.clipboard.writeText(text).then(function() {
+        const originalText = button.textContent;
+        button.textContent = 'Copied!';
+        button.classList.add('btn-copied');
+        setTimeout(function() {
+            button.textContent = originalText;
+            button.classList.remove('btn-copied');
+        }, 2000);
+    }).catch(function(err) {
+        console.error('Failed to copy: ', err);
+        alert('Failed to copy to clipboard');
+    });
+}
+</script>
+{% endblock %}

@@ -1,9 +1,8 @@
 """API authentication endpoints."""
 
-import jwt
-from datetime import datetime, timedelta, timezone
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify
 
+from .. import db
 from ..models import User
 
 api_auth_bp = Blueprint("api_auth", __name__)
@@ -11,7 +10,7 @@ api_auth_bp = Blueprint("api_auth", __name__)
 
 @api_auth_bp.route("/auth/login", methods=["POST"])
 def login() -> tuple:
-    """Login and return JWT token.
+    """Login and return API token.
 
     Request body (JSON):
         username: str
@@ -32,22 +31,16 @@ def login() -> tuple:
     if user is None or not user.check_password(password):
         return jsonify({"error": "Invalid username or password"}), 401
 
-    # Generate JWT token
-    token_payload = {
-        "user_id": user.id,
-        "username": user.username,
-        "exp": datetime.now(timezone.utc)
-        + current_app.config.get("JWT_ACCESS_TOKEN_EXPIRES", timedelta(hours=24)),
-    }
+    if not user.token:
+        user.token = User.generate_token()
+        db.session.commit()
 
-    token = jwt.encode(token_payload, current_app.config["JWT_SECRET_KEY"], algorithm="HS256")
-
-    return jsonify({"access_token": token, "user_id": user.id, "username": user.username}), 200
+    return jsonify({"access_token": user.token, "user_id": user.id, "username": user.username}), 200
 
 
 @api_auth_bp.route("/auth/logout", methods=["POST"])
 def logout() -> tuple:
-    """Logout endpoint (JWT is stateless, so this is mainly for API compatibility).
+    """Logout endpoint (token-based auth is stateless, so this is mainly for API compatibility).
 
     Returns:
         JSON response with success message.

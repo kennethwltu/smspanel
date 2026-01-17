@@ -33,31 +33,38 @@
     </form>
 
     {% if messages.items %}
-        <div class="message-list">
-            {% for msg in messages.items %}
-                <div class="message-card">
-                    <div class="message-header">
-                        <span class="status status-{{ msg.status }}">{{ msg.status|upper }}</span>
-                        <span class="timestamp">{{ msg.created_at|hkt }}</span>
-                    </div>
-                    <div class="message-content">
-                        {{ msg.content }}
-                    </div>
-                    <div class="message-footer">
-                        <span class="recipient-count">
-                            {{ msg.recipient_count }} recipient(s)
-                            {% if msg.success_count > 0 %}
-                                <span class="success">({{ msg.success_count }} sent)</span>
-                            {% endif %}
-                            {% if msg.failed_count > 0 %}
-                                <span class="failed">({{ msg.failed_count }} failed)</span>
-                            {% endif %}
-                        </span>
-                        <a href="{{ url_for('web.web_sms.sms_detail', message_id=msg.id) }}" class="btn btn-small">View Details</a>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Time</th>
+                    <th>Message</th>
+                    <th>Recipients</th>
+                    <th>Sent/Failed</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for msg in messages.items %}
+                    <tr class="message-row">
+                        <td>
+                            <span class="status status-{{ msg.status }}">{{ msg.status|upper }}</span>
+                        </td>
+                        <td class="timestamp">{{ msg.created_at|hkt }}</td>
+                        <td class="message-content">{{ msg.content }}</td>
+                        <td class="recipient-num">{{ msg.recipient_count }}</td>
+                        <td class="counts">
+                            {% if msg.success_count > 0 %}<span class="success">{{ msg.success_count }}</span>{% endif %}
+                            {% if msg.failed_count > 0 %}<span class="failed">/{{ msg.failed_count }}</span>{% endif %}
+                            {% if msg.success_count == 0 and msg.failed_count == 0 %}<span class="pending">-</span>{% endif %}
+                        </td>
+                        <td class="actions">
+                            <a href="{{ url_for('web.web_sms.sms_detail', message_id=msg.id) }}" class="btn btn-small">View</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
         <div class="pagination">
             {% if messages.has_prev %}
