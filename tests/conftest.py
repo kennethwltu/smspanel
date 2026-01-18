@@ -31,7 +31,7 @@ def runner(app):
 
 
 def _create_test_user(app, username="testuser", password="testpass123"):
-    """Helper to create a test user."""
+    """Helper to create a test user with API token."""
     with app.app_context():
         # Use unique username if default is taken
         existing = User.query.filter_by(username=username).first()
@@ -40,31 +40,27 @@ def _create_test_user(app, username="testuser", password="testpass123"):
 
         user = User(username=username)
         user.set_password(password)
-        user.api_key = f"test-api-key-{uuid.uuid4().hex[:16]}"
+        user.token = User.generate_token()  # Generate API token
         db.session.add(user)
         db.session.commit()
         user_id = user.id
         stored_username = username
+        api_token = user.token
         db.session.expunge(user)
-        return user_id, stored_username
+        return user_id, stored_username, api_token
 
 
 @pytest.fixture
 def test_user(app):
     """Create a test user and return a simple object."""
-    user_id, username = _create_test_user(app)
+    user_id, username, _ = _create_test_user(app)
     return type("TestUser", (), {"id": user_id, "username": username})()
 
 
 @pytest.fixture
 def auth_headers(client, app):
-    """Get JWT auth headers for a test user."""
-    user_id, username = _create_test_user(app)
-    response = client.post(
-        "/api/auth/login",
-        json={"username": username, "password": "testpass123"},
-    )
-    token = response.json["access_token"]
+    """Get auth headers for a test user using API token."""
+    user_id, username, token = _create_test_user(app)
     return {"Authorization": f"Bearer {token}", "user_id": user_id}
 
 
@@ -87,7 +83,7 @@ def test_message(app):
         else:
             user = User(username=username)
             user.set_password(password)
-            user.api_key = f"test-api-key-{uuid.uuid4().hex[:16]}"
+            user.token = User.generate_token()
             db.session.add(user)
             db.session.commit()
             user_id = user.id

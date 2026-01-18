@@ -1,13 +1,84 @@
 """API SMS endpoints."""
 
+import logging
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 
 from .. import db
 from ..models import User, Message, Recipient
 from ..services.hkt_sms import HKTSMSService
+from ..services.queue import get_task_queue
+
+logger = logging.getLogger(__name__)
 
 api_sms_bp = Blueprint("api_sms", __name__)
+
+
+def _process_single_sms(message_id: int, recipient: str):
+    """Background task to send a single SMS.
+
+    Args:
+        message_id: Message ID in database.
+        recipient: Phone number to send to.
+    """
+
+    message = Message.query.get(message_id)
+    if not message:
+        logger.error(f"Message {message_id} not found")
+        return
+
+    recipient_record = Recipient.query.filter_by(message_id=message_id, phone=recipient).first()
+    if not recipient_record:
+        logger.error(f"Recipient record not found for message {message_id}, phone {recipient}")
+        return
+
+    sms_service = HKTSMSService()
+    result = sms_service.send_single(recipient, message.content)
+
+    if result["success"]:
+        message.status = "sent"
+        message.sent_at = datetime.now(timezone.utc)
+        message.hkt_response = result.get("response_text", "")
+        recipient_record.status = "sent"
+    else:
+        message.status = "failed"
+        recipient_record.status = "failed"
+        recipient_record.error_message = result.get("error", "Unknown error")
+
+    db.session.commit()
+
+
+def _process_bulk_sms(message_id: int, recipients: list[str]):
+    """Background task to send bulk SMS.
+
+    Args:
+        message_id: Message ID in database.
+        recipients: List of phone numbers to send to.
+    """
+
+    message = Message.query.get(message_id)
+    if not message:
+        logger.error(f"Message {message_id} not found")
+        return
+
+    sms_service = HKTSMSService()
+    result = sms_service.send_bulk(recipients, message.content)
+
+    all_sent = result["success"]
+    message.status = "sent" if all_sent else "partial" if result["successful"] > 0 else "failed"
+    if all_sent:
+        message.sent_at = datetime.now(timezone.utc)
+
+    # Update individual recipient statuses
+    for i, recipient_result in enumerate(result["results"]):
+        recipient_record = message.recipients[i]
+        if recipient_result["success"]:
+            recipient_record.status = "sent"
+        else:
+            recipient_record.status = "failed"
+            recipient_record.error_message = recipient_result.get("error", "Unknown error")
+
+    db.session.commit()
 
 
 def get_user_from_token() -> User | None:
@@ -59,8 +130,7 @@ def list_messages() -> tuple:
                     "status": m.status,
                     "created_at": m.created_at.isoformat(),
                     "recipient_count": m.recipient_count,
-                    "success_count": m.success_count,
-                    "failed_count": m.failed_count,
+                    "recipients": [r.phone for r in m.recipients],
                 }
                 for m in messages.items
             ],
@@ -73,14 +143,14 @@ def list_messages() -> tuple:
 
 @api_sms_bp.route("/sms", methods=["POST"])
 def send_sms() -> tuple:
-    """Send a single SMS message.
+    """Send a single SMS message (asynchronous).
 
     Request body (JSON):
         recipient: str - Phone number
         content: str - Message content
 
     Returns:
-        JSON response with message details.
+        JSON response with message details (status will be 'pending').
     """
     user = get_user_from_token()
     if user is None:
@@ -103,47 +173,38 @@ def send_sms() -> tuple:
     db.session.add(recipient_record)
     db.session.commit()
 
-    # Send SMS via HKT
-    sms_service = HKTSMSService()
-    result = sms_service.send_single(recipient, content)
+    # Enqueue background task
+    task_queue = get_task_queue()
+    enqueued = task_queue.enqueue(_process_single_sms, message.id, recipient)
 
-    # Update records based on result
-    if result["success"]:
-        message.status = "sent"
-        message.sent_at = datetime.now(timezone.utc)
-        message.hkt_response = result.get("response_text", "")
-        recipient_record.status = "sent"
-    else:
-        message.status = "failed"
-        recipient_record.status = "failed"
-        recipient_record.error_message = result.get("error", "Unknown error")
-
-    db.session.commit()
+    if not enqueued:
+        return jsonify({"error": "Service is busy, please try again later"}), 503
 
     return (
         jsonify(
             {
                 "id": message.id,
-                "status": message.status,
+                "status": "pending",
                 "recipient": recipient,
                 "content": content,
                 "created_at": message.created_at.isoformat(),
+                "message": "SMS queued for sending",
             }
         ),
-        200 if result["success"] else 500,
+        202,
     )
 
 
 @api_sms_bp.route("/sms/send-bulk", methods=["POST"])
 def send_bulk_sms() -> tuple:
-    """Send SMS messages to multiple recipients.
+    """Send SMS messages to multiple recipients (asynchronous).
 
     Request body (JSON):
         recipients: list[str] - List of phone numbers
         content: str - Message content
 
     Returns:
-        JSON response with message details.
+        JSON response with message details (status will be 'pending').
     """
     user = get_user_from_token()
     if user is None:
@@ -168,40 +229,25 @@ def send_bulk_sms() -> tuple:
 
     db.session.commit()
 
-    # Send SMS via HKT
-    sms_service = HKTSMSService()
-    result = sms_service.send_bulk(recipients, content)
+    # Enqueue background task
+    task_queue = get_task_queue()
+    enqueued = task_queue.enqueue(_process_bulk_sms, message.id, recipients)
 
-    # Update records based on result
-    all_sent = result["success"]
-    message.status = "sent" if all_sent else "partial" if result["successful"] > 0 else "failed"
-    if all_sent:
-        message.sent_at = datetime.now(timezone.utc)
-
-    # Update individual recipient statuses
-    for i, recipient_result in enumerate(result["results"]):
-        recipient_record = message.recipients[i]
-        if recipient_result["success"]:
-            recipient_record.status = "sent"
-        else:
-            recipient_record.status = "failed"
-            recipient_record.error_message = recipient_result.get("error", "Unknown error")
-
-    db.session.commit()
+    if not enqueued:
+        return jsonify({"error": "Service is busy, please try again later"}), 503
 
     return (
         jsonify(
             {
                 "id": message.id,
-                "status": message.status,
-                "total": result["total"],
-                "successful": result["successful"],
-                "failed": result["failed"],
+                "status": "pending",
+                "total": len(recipients),
                 "content": content,
                 "created_at": message.created_at.isoformat(),
+                "message": "Bulk SMS queued for sending",
             }
         ),
-        200 if all_sent else 207 if result["successful"] > 0 else 500,
+        202,
     )
 
 

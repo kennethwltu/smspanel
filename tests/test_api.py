@@ -4,45 +4,6 @@ from ccdemo import db
 from ccdemo.models import Message, Recipient
 
 
-class TestAuthAPI:
-    """Tests for authentication API endpoints."""
-
-    def test_login_success(self, client, test_user):
-        """Test successful login."""
-        response = client.post(
-            "/api/auth/login",
-            json={"username": "testuser", "password": "testpass123"},
-        )
-        assert response.status_code == 200
-        data = response.json
-        assert "access_token" in data
-        assert data["username"] == "testuser"
-        assert data["user_id"] == test_user.id
-
-    def test_login_invalid_credentials(self, client, test_user):
-        """Test login with invalid credentials."""
-        response = client.post(
-            "/api/auth/login",
-            json={"username": "testuser", "password": "wrongpass"},
-        )
-        assert response.status_code == 401
-        assert "error" in response.json
-
-    def test_login_missing_fields(self, client):
-        """Test login with missing fields."""
-        response = client.post(
-            "/api/auth/login",
-            json={"username": "testuser"},
-        )
-        assert response.status_code == 400
-
-    def test_logout(self, client, auth_headers):
-        """Test logout endpoint."""
-        response = client.post("/api/auth/logout", headers=auth_headers)
-        assert response.status_code == 200
-        assert "message" in response.json
-
-
 class TestSMSAPI:
     """Tests for SMS API endpoints."""
 
@@ -87,16 +48,17 @@ class TestSMSAPI:
         assert response.status_code == 400
 
     def test_send_sms_invalid_request(self, client, auth_headers):
-        """Test sending SMS to HKT (will fail without actual HKT credentials)."""
+        """Test sending SMS to HKT (will be queued)."""
         response = client.post(
             "/api/sms",
             json={"recipient": "85212345678", "content": "Test message"},
             headers=auth_headers,
         )
-        # Should still create the record, but HKT send will fail
-        assert response.status_code in [200, 500]
+        # SMS should be queued and return 202
+        assert response.status_code == 202
         data = response.json
         assert "id" in data
+        assert data["status"] == "pending"
 
     def test_send_bulk_sms_unauthorized(self, client):
         """Test sending bulk SMS without authorization."""

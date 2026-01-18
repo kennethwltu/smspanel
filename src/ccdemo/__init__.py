@@ -20,7 +20,7 @@ def format_hkt(dt: datetime) -> str:
         dt: datetime object (timezone-aware or naive)
 
     Returns:
-        Formatted string in HKT (YYYY-MM-DD HH:MM:SS HKT)
+        Formatted string in HKT (YYYY-MM-DD HH:MM:SS.mmm HKT)
     """
     if dt is None:
         return ""
@@ -29,7 +29,8 @@ def format_hkt(dt: datetime) -> str:
         dt = dt.replace(tzinfo=timezone.utc)
     # Convert to HKT
     hkt_dt = dt.astimezone(HKT_TZ)
-    return hkt_dt.strftime("%Y-%m-%d %H:%M:%S HKT")
+    # Include milliseconds for precise timing
+    return hkt_dt.strftime("%Y-%m-%d %H:%M:%S.") + f"{hkt_dt.microsecond // 1000:03d} HKT"
 
 
 def create_app(config_name: str = "default") -> Flask:
@@ -56,6 +57,13 @@ def create_app(config_name: str = "default") -> Flask:
 
     # Register custom template filters
     app.jinja_env.filters["hkt"] = format_hkt
+
+    # Initialize task queue
+    from .services.queue import init_task_queue
+
+    num_workers = app.config.get("SMS_QUEUE_WORKERS", 4)
+    max_queue_size = app.config.get("SMS_QUEUE_MAX_SIZE", 1000)
+    init_task_queue(app, num_workers=num_workers, max_queue_size=max_queue_size)
 
     # Initialize admin account if it doesn't exist
     with app.app_context():

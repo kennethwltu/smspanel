@@ -51,7 +51,7 @@
                             <td>
                                 <span class="status status-{{ msg.status }}">{{ msg.status|upper }}</span>
                             </td>
-                            <td class="timestamp">{{ msg.created_at|hkt }}</td>
+                            <td class="timestamp">{{ msg.sent_at|hkt if msg.sent_at else msg.created_at|hkt }}</td>
                             <td class="message-content">{{ msg.content }}</td>
                             <td class="recipients-list">
                                 {% for recipient in msg.recipients %}
