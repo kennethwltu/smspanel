@@ -123,7 +123,8 @@ def compose():
             create_recipient_records(message.id, valid_recipients)
 
         # Send SMS via SMS gateway
-        sms_service = HKTSMSService()
+        from ..utils.sms_helper import get_sms_service
+        sms_service = get_sms_service()
         result = sms_service.send_bulk(valid_recipients, sms_content)
 
         # Update message status based on result
