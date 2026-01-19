@@ -34,7 +34,7 @@ class TestHKTSMSService:
             assert config["application_id"] == app.config["HKT_APPLICATION_ID"]
             assert config["sender_number"] == app.config["HKT_SENDER_NUMBER"]
 
-    @patch("ccdemo.services.hkt_sms.requests.post")
+    @patch("smspanel.services.hkt_sms.requests.post")
     def test_send_single_success(self, mock_post, app):
         """Test successful single SMS send."""
         mock_post.side_effect = MockHKTPost(failure_rate=0, min_delay=0, max_delay=0)
@@ -51,7 +51,7 @@ class TestHKTSMSService:
             call_args = mock_post.call_args[0][0]
             assert call_args == "https://test.com"
 
-    @patch("ccdemo.services.hkt_sms.requests.post")
+    @patch("smspanel.services.hkt_sms.requests.post")
     def test_send_single_http_error(self, mock_post, app):
         """Test single SMS send with HTTP error."""
         mock_post.side_effect = MockHKTPost(failure_rate=1.0, min_delay=0, max_delay=0)
@@ -63,7 +63,7 @@ class TestHKTSMSService:
             assert result["success"] is False
             assert "error" in result
 
-    @patch("ccdemo.services.hkt_sms.requests.post")
+    @patch("smspanel.services.hkt_sms.requests.post")
     def test_send_single_with_unicode(self, mock_post, app):
         """Test single SMS send with Unicode characters."""
         mock_post.side_effect = MockHKTPost(failure_rate=0, min_delay=0, max_delay=0)
@@ -74,7 +74,7 @@ class TestHKTSMSService:
 
             assert result["success"] is True
 
-    @patch("ccdemo.services.hkt_sms.requests.post")
+    @patch("smspanel.services.hkt_sms.requests.post")
     def test_send_bulk_all_success(self, mock_post, app):
         """Test bulk SMS send with all successful."""
         mock_post.side_effect = MockHKTPost(failure_rate=0, min_delay=0, max_delay=0)
@@ -91,7 +91,7 @@ class TestHKTSMSService:
             assert len(result["results"]) == 2
             assert all(r["success"] for r in result["results"])
 
-    @patch("ccdemo.services.hkt_sms.requests.post")
+    @patch("smspanel.services.hkt_sms.requests.post")
     def test_send_bulk_partial_failure(self, mock_post, app):
         """Test bulk SMS send with partial failures."""
         # Track call count and behave differently on each call
@@ -121,7 +121,7 @@ class TestHKTSMSService:
             assert result["results"][0]["success"] is True
             assert result["results"][1]["success"] is False
 
-    @patch("ccdemo.services.hkt_sms.requests.post")
+    @patch("smspanel.services.hkt_sms.requests.post")
     def test_send_bulk_empty_list(self, mock_post, app):
         """Test bulk SMS send with empty recipient list."""
         with app.app_context():
