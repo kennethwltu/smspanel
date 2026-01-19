@@ -345,7 +345,7 @@ rm instance/sms.db
 
 ## Configuration
 
-Configuration is in `src/ccdemo/config.py`. The following environment variables are required:
+Configuration is in `src/smspanel/config.py`. The following environment variables are required:
 
 | Setting | Description | Environment Variable |
 |---------|-------------|---------------------|
