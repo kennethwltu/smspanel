@@ -24,12 +24,7 @@ USER_TOKEN_REGENERATED = "API token regenerated for '{username}'."
 
 
 # SMS messages
-SMS_EMPTY_RECIPIENTS = "Please enter at least one phone number."
-SMS_EMPTY_CONTENT = "Please enter the message content."
-SMS_SENT_QUEUED = "SMS has been queued for sending."
-SMS_BULK_QUEUED = "SMS has been queued for {count} recipients."
 SMS_ENQUIRY_REQUIRED = "Enquiry Number is required."
 SMS_ENQUIRY_INVALID = "Invalid Enquiry Number format. Must be in format: 4 digits, optional space, 4 digits (e.g., 1234 5678 or 12345678)."
 SMS_CONTENT_REQUIRED = "Message content is required."
-SMS_RECIPIENTS_REQUIRED = "At least one recipient is required."
 SMS_PHONE_INVALID = "Invalid phone number format: {invalid_numbers}. Each number must be in format: 4 digits, optional space, 4 digits (e.g., 1234 5678 or 12345678)."

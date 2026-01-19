@@ -22,18 +22,12 @@ def mock_sms_gateway():
     """Mock SMS gateway endpoint.
 
     Accepts form data with:
-        - application: Application ID
-        - mrt: Mobile Recipient Number (e.g., "85212345678")
-        - sender: Sender number
         - msg_utf8: Message content (UTF-8 encoded)
 
     Returns:
         Mock SMS API response
     """
     data = request.form
-    application = data.get("application", "")
-    mrt = data.get("mrt", "")
-    sender = data.get("sender", "")
     msg_utf8 = data.get("msg_utf8", "")
 
     # Dump message content to stdout

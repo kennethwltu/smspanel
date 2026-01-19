@@ -2,7 +2,7 @@
 
 from unittest.mock import patch
 
-from smspanel.config import ConfigService, SMSConfig
+from smspanel.config import ConfigService
 from smspanel.services.hkt_sms import HKTSMSService
 from .mocks import MockHKTPost, MockSMSResponse
 
