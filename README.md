@@ -1,4 +1,4 @@
-# ccdemo
+# smspanel
 
 A Python SMS management application with web UI and REST API for sending and tracking SMS messages via HKT SMS gateway.
 
