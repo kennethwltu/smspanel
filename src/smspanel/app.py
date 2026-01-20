@@ -123,18 +123,42 @@ def _init_task_queue(app: Flask) -> None:
 def _ensure_admin_user(app: Flask) -> None:
     """Ensure default admin user exists.
 
+    Admin credentials are read from environment variables:
+    - ADMIN_PASSWORD: Admin password (auto-generated if not set)
+
     Args:
         app: Flask application instance.
     """
+    import secrets
+    import string
+    from os import getenv
+
     with app.app_context():
         db.create_all()
         admin_user = User.query.filter_by(username="SMSadmin").first()
         if admin_user is None:
+            # Get admin password from env or generate one
+            admin_password = getenv("ADMIN_PASSWORD")
+            if admin_password is None:
+                # Generate a secure random password
+                alphabet = string.ascii_letters + string.digits
+                admin_password = "".join(secrets.choice(alphabet) for _ in range(16))
+                # In production, log warning about generated password
+                if not app.config.get("DEBUG", True):
+                    app.logger.warning(
+                        "Admin password was auto-generated. "
+                        "Set ADMIN_PASSWORD environment variable to prevent this."
+                    )
+
             admin = User(username="SMSadmin")
-            admin.set_password("SMSpass#12")
+            admin.set_password(admin_password)
             admin.token = User.generate_token()
             admin.is_admin = True
             admin.is_active = True
 
             db.session.add(admin)
             db.session.commit()
+
+            # Log the generated password in development only
+            if getenv("ADMIN_PASSWORD") is None and app.config.get("DEBUG", False):
+                print(f"\n[DEV] Generated admin password: {admin_password}\n")
