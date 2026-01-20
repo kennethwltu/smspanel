@@ -3,15 +3,17 @@
 Environment Variables:
     Required:
         DATABASE_URL - SQLAlchemy database connection string
+        SECRET_KEY - Flask session encryption (min 32 chars, required in production)
         SMS_BASE_URL - SMS gateway URL
-        SMS_APPLICATION_ID - SMS API application ID
+        SMS_APPLICATION_ID - SMS API app ID
         SMS_SENDER_NUMBER - SMS sender number
 
     Optional (with defaults):
-        SECRET_KEY - Flask session encryption (default: dev key)
+        ADMIN_PASSWORD - Admin user password (auto-generated if not set)
 """
 
 import os
+import warnings
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -20,8 +22,8 @@ load_dotenv()
 class Config:
     """Base configuration."""
 
-    # Flask
-    SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
+    # Flask - SECRET_KEY must be set in production!
+    SECRET_KEY = os.getenv("SECRET_KEY")
 
     # Database
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///sms.db")
@@ -42,11 +44,35 @@ class DevelopmentConfig(Config):
 
     DEBUG = True
 
+    def __init__(self):
+        super().__init__()
+        # Use a dev key only in development (warn in logs)
+        if self.SECRET_KEY is None:
+            warnings.warn(
+                "SECRET_KEY not set, using development default. "
+                "Set SECRET_KEY environment variable for production!"
+            )
+            self.SECRET_KEY = "dev-secret-key-change-in-production"
+
 
 class ProductionConfig(Config):
     """Production configuration."""
 
     DEBUG = False
+
+    def __init__(self):
+        super().__init__()
+        # SECRET_KEY is required in production
+        if self.SECRET_KEY is None:
+            raise ValueError(
+                "SECRET_KEY environment variable is required in production. "
+                "Set it before starting the application."
+            )
+        # Ensure key is sufficiently long
+        if len(self.SECRET_KEY) < 32:
+            raise ValueError(
+                "SECRET_KEY must be at least 32 characters long."
+            )
 
 
 class TestingConfig(Config):
