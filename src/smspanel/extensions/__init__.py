@@ -2,9 +2,11 @@
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_wtf import CSRFProtect
 
 db = SQLAlchemy()
 login_manager = LoginManager()
+csrf = CSRFProtect()
 
 
 def init_db(app):
@@ -25,6 +27,15 @@ def init_login(app):
     login_manager.init_app(app)
 
 
+def init_csrf(app):
+    """Initialize CSRF protection.
+
+    Args:
+        app: Flask application instance.
+    """
+    csrf.init_app(app)
+
+
 def init_all(app):
     """Initialize all extensions.
 
@@ -33,9 +44,10 @@ def init_all(app):
     """
     init_db(app)
     init_login(app)
+    init_csrf(app)
 
 
 # Re-exports for backwards compatibility
 # Tests import db and login_manager directly from smspanel.extensions
-__all__ = ["db", "login_manager", "init_db", "init_login", "init_all"]
+__all__ = ["db", "login_manager", "csrf", "init_db", "init_login", "init_csrf", "init_all"]
 

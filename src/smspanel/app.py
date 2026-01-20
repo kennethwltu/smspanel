@@ -6,8 +6,8 @@ from typing import Optional
 from flask import Flask
 
 from .config import ConfigService
-from .extensions import init_all
-from .models import db
+from .extensions import db, csrf, init_all
+from .models import User
 
 
 def create_app(config_name: Optional[str] = None) -> Flask:
@@ -28,7 +28,7 @@ def create_app(config_name: Optional[str] = None) -> Flask:
     init_all(app)
 
     # Configure login manager
-    from flask_login import login_manager
+    from .extensions import login_manager
     login_manager.login_view = "web.web_auth.login"
     login_manager.login_message = "Please log in to access this page."
 
@@ -126,8 +126,6 @@ def _ensure_admin_user(app: Flask) -> None:
     Args:
         app: Flask application instance.
     """
-    from .models import User
-
     with app.app_context():
         db.create_all()
         admin_user = User.query.filter_by(username="SMSadmin").first()

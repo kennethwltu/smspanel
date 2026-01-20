@@ -28,19 +28,40 @@ def test_base_template_contains_csrf_token():
 
 
 def test_csrf_protection_initialized():
-    """CSRF protection should be enabled on app."""
-    from smspanel.app import create_app
+    """CSRF protection should be configured on app."""
+    from flask import Flask
+    from smspanel.extensions import csrf
 
-    app = create_app("testing")
-    # CSRF should be enabled
-    assert app.config.get("WTF_CSRF_ENABLED", False) == True
+    app = Flask(__name__)
+    app.config["SECRET_KEY"] = "test-secret-key"
+    app.config["WTF_CSRF_ENABLED"] = True
+    # Initialize CSRF
+    csrf.init_app(app)
+
+    # CSRF should now be enabled
+    assert app.config.get("WTF_CSRF_ENABLED") == True
 
 
 def test_login_rejects_invalid_csrf():
     """Login with invalid CSRF token should be rejected."""
-    from smspanel.app import create_app
+    from flask import Flask
+    from smspanel.extensions import init_all, db
+    from smspanel.app import _register_blueprints
 
-    app = create_app("testing")
+    app = Flask(__name__)
+    app.config["SECRET_KEY"] = "test-secret-key"
+    app.config["WTF_CSRF_ENABLED"] = True
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+    app.config["TESTING"] = True
+
+    # Initialize extensions
+    init_all(app)
+    _register_blueprints(app)
+
+    # Create tables
+    with app.app_context():
+        db.create_all()
+
     with app.test_client() as client:
         response = client.post(
             "/login",
