@@ -4,6 +4,7 @@ from smspanel import db
 def test_db_queue_exists():
     """Database-backed queue should exist."""
     from smspanel.services.db_queue import DatabaseQueue
+
     assert DatabaseQueue is not None
 
 

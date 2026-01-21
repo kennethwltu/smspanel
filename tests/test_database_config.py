@@ -1,6 +1,7 @@
 def test_mysql_uri_parsed_correctly():
     """MySQL connection string should parse correctly."""
     from smspanel.config.config import Config
+
     Config.SQLALCHEMY_DATABASE_URI = "mysql+pymysql://user:pass@localhost:3306/smspanel"
     assert "mysql+pymysql" in Config.SQLALCHEMY_DATABASE_URI
     assert "pymysql" in Config.SQLALCHEMY_DATABASE_URI
@@ -9,6 +10,7 @@ def test_mysql_uri_parsed_correctly():
 def test_pool_settings_configured():
     """Pool settings should be configurable."""
     from smspanel.config.config import Config
+
     assert hasattr(Config, "SQLALCHEMY_POOL_SIZE")
     assert hasattr(Config, "SQLALCHEMY_POOL_MAX_OVERFLOW")
     assert hasattr(Config, "SQLALCHEMY_POOL_RECYCLE")

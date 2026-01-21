@@ -70,7 +70,9 @@ class DatabaseQueue:
         try:
             task = QueuedTask(
                 task_name=task_func_name,
-                task_func=f"{task_func.__module__}.{task_func.__name__}" if task_func else task_func_name,
+                task_func=f"{task_func.__module__}.{task_func.__name__}"
+                if task_func
+                else task_func_name,
                 args=json.dumps(args) if args else None,
                 kwargs=json.dumps(kwargs) if kwargs else None,
                 status=QueueStatus.PENDING,
