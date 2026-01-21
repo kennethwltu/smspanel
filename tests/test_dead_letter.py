@@ -1,5 +1,6 @@
 """Tests for dead letter queue."""
-import pytest
+
+from smspanel import db
 
 
 def test_dead_letter_message_model_exists():
@@ -60,8 +61,11 @@ def test_dead_letter_admin_routes_exist(app):
 
     assert web_dead_letter_bp is not None
 
+    # Register blueprint with test app to get routes
+    app.register_blueprint(web_dead_letter_bp)
+
     # Check route registration
-    routes = [rule.rule for rule in web_dead_letter_bp.url_map.iter_rules()]
+    routes = [rule.rule for rule in app.url_map.iter_rules()]
     assert "/admin/dead-letter" in routes
-    assert "/admin/dead-letter/retry" in routes
-    assert "/admin/dead-letter/abandon" in routes
+    assert "/admin/dead-letter/retry/<int:message_id>" in routes
+    assert "/admin/dead-letter/abandon/<int:message_id>" in routes

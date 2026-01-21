@@ -1,7 +1,6 @@
 """Dead letter queue service for persisting failed SMS messages."""
 
 import logging
-from datetime import datetime, timezone
 from typing import Optional, List
 
 from ..models import db, DeadLetterMessage
@@ -106,13 +105,17 @@ class DeadLetterQueue:
             return False
 
         if not dead_letter.can_retry():
-            logger.warning(f"Dead letter {dead_letter_id} cannot be retried (retry_count={dead_letter.retry_count})")
+            logger.warning(
+                f"Dead letter {dead_letter_id} cannot be retried (retry_count={dead_letter.retry_count})"
+            )
             return False
 
         dead_letter.increment_retry()
         db.session.commit()
 
-        logger.info(f"Dead letter {dead_letter_id} marked for retry (attempt {dead_letter.retry_count})")
+        logger.info(
+            f"Dead letter {dead_letter_id} marked for retry (attempt {dead_letter.retry_count})"
+        )
         return True
 
     def mark_retried(self, dead_letter_id: int) -> bool:
