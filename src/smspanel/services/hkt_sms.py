@@ -1,6 +1,12 @@
 """SMS service for sending SMS messages."""
 
 import requests
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+)
 from typing import Dict, Optional
 
 from ..config import ConfigService, SMSConfig
@@ -30,8 +36,14 @@ class HKTSMSService:
             self._config = self.config_service.get_sms_config()
         return self._config
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type((requests.ConnectionError, requests.Timeout)),
+        reraise=True,
+    )
     def send_single(self, recipient: str, message: str) -> Dict[str, any]:
-        """Send a single SMS message.
+        """Send a single SMS message with retry logic.
 
         Args:
             recipient: Phone number (e.g., "85212345678")
@@ -41,7 +53,7 @@ class HKTSMSService:
             Dict with status and response details.
 
         Raises:
-            SMSError: If API request fails.
+            SMSError: If API request fails after all retries.
         """
         config = self._get_config()
 
@@ -67,6 +79,9 @@ class HKTSMSService:
                 "status_code": response.status_code,
                 "response_text": response.text,
             }
+        except (requests.ConnectionError, requests.Timeout):
+            # Let tenacity handle retry
+            raise
         except requests.RequestException as e:
             return {
                 "success": False,
