@@ -27,12 +27,14 @@ The app uses Flask's application factory pattern in `app.py`. `create_app()` ret
 **API Blueprint** (`api/` prefix):
 - `api/sms.py` - SMS endpoints (list, send single/bulk, get details)
 - `api/decorators.py` - `@validate_json` decorator for request validation
-- `api/responses.py` - Standardized API response helpers
+- `api/responses.py` - Standardized API response helpers (`{error: {code, message}}` format)
+- `api/health.py` - Health check endpoints (`/api/health`, `/api/health/live`, `/api/health/ready`)
 
 **Web Blueprint** (no prefix):
 - `web/auth.py` - `/login`, `/logout` (Flask-Login session-based auth)
 - `web/sms.py` - `/`, `/compose`, `/history`, `/history/<id>`
 - `web/admin.py` - `/admin/users/*` (admin-only user management)
+- `web/admin_messages.py` - `/admin/messages` (admin message query with filters)
 - `web/dead_letter.py` - `/admin/dead-letter` (dead letter queue management)
 
 ### Service Layer
@@ -67,6 +69,7 @@ In-memory threading-based queue for async SMS processing:
 
 **User**: id, username, password_hash, token, is_admin, is_active, created_at
 **Message**: id, user_id, content, status, created_at, sent_at, hkt_response
+  - Compound index: `ix_messages_user_id_created_at` on `(user_id, created_at)`
 **Recipient**: id, message_id, phone, status, error_message
 **DeadLetterMessage**: id, message_id, recipient, content, error_message, error_type, retry_count, max_retries, status, created_at, retried_at, last_attempt_at
 
@@ -155,3 +158,19 @@ Helper: `utils/validation.validate_enquiry_number()`
 ## HKT Timezone
 
 Template filter `{{ dt|hkt }}` converts UTC to Hong Kong Time (UTC+8).
+
+## Structured Logging (`utils/logging.py`)
+
+- Request ID tracking via `get_request_id()`, `set_request_id()`
+- `log_error()` for standardized error logging with context
+- `log_request()` for HTTP request logging
+- Request ID auto-injected into all logs (from `X-Request-ID` header or auto-generated)
+
+## Standardized Error Responses
+
+API errors use consistent format:
+```json
+{"error": {"code": "ERR_CODE", "message": "Human-readable message"}}
+```
+
+Helper: `api/responses.error()` function for generating error responses.

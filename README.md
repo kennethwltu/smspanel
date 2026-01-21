@@ -18,6 +18,10 @@ This application provides a comprehensive SMS management system with the followi
 - **SMS Composition & Sending**: Create and send SMS messages to single or multiple recipients
 - **Message History**: Track sent messages with status (pending, sent, failed, partial)
 - **User Management**: Admin interface for user CRUD operations
+- **Admin Message Query**: Filter and search messages by user, status, and date range
+- **Health Check Endpoints**: Kubernetes-ready `/api/health`, `/api/health/live`, `/api/health/ready`
+- **Structured Logging**: Request-ID tracked logging for easy debugging
+- **Standardized API Errors**: Consistent `{error: {code, message}}` response format
 - **Authentication**: Web login and API token-based authentication
 - **Hong Kong Time**: Built-in timezone conversion (UTC to HKT)
 - **Mock SMS API**: Testing mode simulates SMS gateway
@@ -59,6 +63,7 @@ This application provides a comprehensive SMS management system with the followi
 | `/admin/users/<id>/toggle` | POST | Required, Admin | Enable/disable user |
 | `/admin/users/<id>/delete` | GET, POST | Required, Admin | Delete user |
 | `/admin/users/<id>/regenerate_token` | POST | Required, Admin | Regenerate API token |
+| `/admin/messages` | GET | Required, Admin | List messages with filters (user, status, date range) |
 
 ## API Endpoints
 
@@ -69,6 +74,9 @@ This application provides a comprehensive SMS management system with the followi
 | `/api/sms/send-bulk` | POST | Token Required | Send bulk SMS |
 | `/api/sms/<id>` | GET | Token Required | Get message details |
 | `/api/sms/<id>/recipients` | GET | Token Required | Get message recipients |
+| `/api/health` | GET | None | Full health check (database, memory, version) |
+| `/api/health/live` | GET | None | Liveness probe (always returns alive) |
+| `/api/health/ready` | GET | None | Readiness probe (checks database connection) |
 
 ### API Request Example
 
@@ -390,27 +398,37 @@ smspanel/
 │       ├── __init__.py      # App factory
 │       ├── api/             # REST API endpoints
 │       │   ├── __init__.py
-│       │   └── sms.py       # SMS endpoints
+│       │   ├── sms.py       # SMS endpoints
+│       │   ├── decorators.py  # Validation decorators
+│       │   ├── responses.py   # Standardized response helpers
+│       │   └── health.py      # Health check endpoints
 │       ├── web/             # Web UI
 │       │   ├── __init__.py
 │       │   ├── auth.py      # Login/logout
 │       │   ├── sms.py       # SMS composition/history
 │       │   ├── admin.py     # User management (admin only)
+│       │   ├── admin_messages.py  # Admin message query
 │       │   └── dead_letter.py  # Dead letter queue management
 │       ├── services/        # Business logic
 │       │   ├── hkt_sms.py   # SMS service with retry logic
 │       │   ├── queue.py     # Async task queue
 │       │   └── dead_letter.py  # Dead letter queue service
+│       ├── utils/           # Utilities
+│       │   ├── logging.py   # Structured logging with request ID
+│       │   ├── validation.py  # Phone number validation
+│       │   └── admin.py     # Admin helpers
 │       └── templates/       # Jinja2 templates
 │           ├── admin/
 │           │   ├── users.html
+│           │   ├── messages.html
 │           │   └── dead_letter.html
 │           └── *.html
 ├── instance/               # SQLite database (auto-created)
 ├── static/                 # CSS, JS assets
 ├── tests/                  # Pytest tests
 ├── scripts/                # Utility scripts
-│   └── mock_sms_api.py     # Mock SMS gateway for testing
+│   ├── mock_sms_api.py     # Mock SMS gateway for testing
+│   └── add_message_compound_index.py  # Database migration helper
 ├── run.py                  # Application entry point
 └── pyproject.toml          # Project config
 ```
