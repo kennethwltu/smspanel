@@ -76,7 +76,7 @@ This application provides a comprehensive SMS management system with the followi
 ```bash
 curl -X POST http://localhost:3570/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"SMSadmin","password":"SMSpass#12"}'
+  -d '{"username":"SMSadmin","password":"<your-password>"}'
 ```
 
 **Send SMS:**
@@ -102,6 +102,74 @@ python run.py
 ```
 
 The app will start on `http://localhost:3570`
+
+## Quick Start
+
+### Fresh Installation
+
+```bash
+# Clone and enter directory
+git clone <repo-url>
+cd smspanel
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Copy environment template
+cp .env.example .env
+
+# Edit .env and set required variables (see Configuration below)
+# At minimum, set SECRET_KEY (at least 32 characters)
+nano .env
+
+# Run the application
+python run.py
+```
+
+### Admin Account Setup
+
+On first run, an admin account is automatically created:
+
+| Field | Value |
+|-------|--------|
+| Username | `SMSadmin` |
+| Password | **Auto-generated random password** |
+
+**In development mode**, the generated password is printed to the console:
+```
+[DEV] Generated admin password: Xy7mN4qR9ZpL2wBc
+```
+
+**To set a known password**, set the `ADMIN_PASSWORD` environment variable before first run:
+
+```bash
+export ADMIN_PASSWORD="YourSecurePassword123"
+python run.py
+```
+
+Or change the password via the web UI after logging in:
+1. Go to `/admin/users`
+2. Click "Change Password" for the admin user
+
+### Creating Additional Users
+
+1. Log in as admin
+2. Navigate to `/admin/users`
+3. Click "Create New User"
+4. Fill in username, password, and optionally check "Admin Account"
+
+### First SMS
+
+1. Log in at `http://localhost:3570/login`
+2. Click "Compose"
+3. Enter recipients (one per line, e.g., `1234 5678`)
+4. Enter message content
+5. Enter enquiry number (4 digits, optional space, 4 digits)
+6. Click "Send SMS"
 
 ## Mock SMS Provider
 
@@ -166,14 +234,18 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 #### 3. Initialize Database
 
 ```bash
+# Set SECRET_KEY and ADMIN_PASSWORD before first run
+export SECRET_KEY="your-secure-key-at-least-32-chars"
+export ADMIN_PASSWORD="YourSecurePassword123"
+
 # Run app once to create database and admin user
-FLASK_ENV=production python run.py
+python run.py
 # Then press Ctrl+C to stop
 ```
 
 **Important**: After first run:
-- Change the default admin password (`SMSpass#12`)
-- Generate a new admin API token via admin panel
+- Change the admin password if you used a temporary one
+- Generate a new admin API token via admin panel if needed
 
 #### 4. Production Server Setup
 
@@ -272,16 +344,21 @@ crontab -e
 
 ## Default Admin Account
 
-A fixed admin account is created on first run:
+An admin account is created automatically on first run:
 
 | Field | Value |
 |-------|--------|
 | Username | `SMSadmin` |
-| Password | `SMSpass#12` |
+| Password | **Auto-generated random password** |
 | Role | Admin |
 | Status | Active |
 
-**Important**: Change this password immediately after first deployment!
+**Security Note:**
+- In development: password is printed to console on first run
+- In production: password is auto-generated and logged as a warning
+- To set a known password, set `ADMIN_PASSWORD` environment variable before first run
+
+**Important**: Change the admin password via the web UI after first deployment if using auto-generated password!
 
 ## Testing
 
@@ -358,7 +435,8 @@ Optional settings (with defaults):
 
 | Setting | Description | Default | Environment Variable |
 |---------|-------------|----------|---------------------|
-| `SECRET_KEY` | Flask session key | dev-secret-key | `SECRET_KEY` |
+| `SECRET_KEY` | Flask session key (min 32 chars) | None (required) | `SECRET_KEY` |
+| `ADMIN_PASSWORD` | Admin user password | Auto-generated | `ADMIN_PASSWORD` |
 
 ## Phone Number Format
 
