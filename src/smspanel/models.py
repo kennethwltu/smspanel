@@ -95,3 +95,56 @@ class Recipient(db.Model):
 
     def __repr__(self) -> str:
         return f"<Recipient {self.phone}: {self.status}>"
+
+
+class DeadLetterMessage(db.Model):
+    """Model for persisting failed SMS messages for later reprocessing.
+
+    This serves as a dead letter queue where SMS messages that fail
+    after all retry attempts are stored for manual review and retry.
+    """
+
+    __tablename__ = "dead_letter_messages"
+
+    id = db.Column(db.Integer, primary_key=True)
+    # Reference to original message
+    message_id = db.Column(db.Integer, db.ForeignKey("messages.id"), nullable=True, index=True)
+    # Recipient information
+    recipient = db.Column(db.String(20), nullable=False, index=True)
+    # Message content
+    content = db.Column(db.Text, nullable=False)
+    # Error details
+    error_message = db.Column(db.Text, nullable=True)
+    error_type = db.Column(db.String(50), nullable=True)  # e.g., "ConnectionError", "Timeout"
+    # Retry tracking
+    retry_count = db.Column(db.Integer, default=0)
+    max_retries = db.Column(db.Integer, default=3)
+    # Status
+    status = db.Column(
+        db.String(20), default="pending", index=True
+    )  # pending, retried, abandoned
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    retried_at = db.Column(db.DateTime, nullable=True)
+    last_attempt_at = db.Column(db.DateTime, nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<DeadLetterMessage {self.id}: {self.recipient} ({self.status})>"
+
+    def can_retry(self) -> bool:
+        """Check if this message can be retried."""
+        return self.retry_count < self.max_retries and self.status == "pending"
+
+    def increment_retry(self) -> None:
+        """Increment retry counter and update timestamp."""
+        self.retry_count += 1
+        self.last_attempt_at = datetime.now(timezone.utc)
+
+    def mark_retried(self) -> None:
+        """Mark this message as successfully retried."""
+        self.status = "retried"
+        self.retried_at = datetime.now(timezone.utc)
+
+    def mark_abandoned(self) -> None:
+        """Mark this message as abandoned after max retries."""
+        self.status = "abandoned"
