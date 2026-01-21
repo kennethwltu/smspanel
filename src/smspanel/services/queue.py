@@ -57,6 +57,8 @@ class TaskQueue:
         Args:
             worker_id: Worker thread ID for logging.
         """
+        from .dead_letter import get_dead_letter_queue
+
         logger.info(f"Worker {worker_id} started")
         while self.running:
             try:
@@ -66,6 +68,18 @@ class TaskQueue:
                         task_func(*args, **kwargs)
                 except Exception as e:
                     logger.error(f"Task execution error in worker {worker_id}: {e}", exc_info=True)
+                    # Try to capture to dead letter queue
+                    try:
+                        dlq = get_dead_letter_queue()
+                        dlq.add(
+                            message_id=None,
+                            recipient=str(args) if args else "unknown",
+                            content=str(kwargs) if kwargs else str(task_func),
+                            error_message=str(e),
+                            error_type=type(e).__name__,
+                        )
+                    except Exception as dlq_error:
+                        logger.error(f"Failed to capture to dead letter queue: {dlq_error}")
                 finally:
                     self.queue.task_done()
             except queue.Empty:
