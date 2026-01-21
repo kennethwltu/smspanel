@@ -419,6 +419,39 @@ smspanel/
 
 SQLite database (`sms.db`) is auto-created in `instance/` directory on first run.
 
+### SQLite (Development - Default)
+
+```bash
+DATABASE_URL=sqlite:///sms.db
+```
+
+### MySQL (Production Recommended)
+
+```bash
+DATABASE_URL=mysql+pymysql://username:password@hostname:3306/database_name
+```
+
+PyMySQL is used as the MySQL driver (pure Python, no system dependencies).
+
+### Connection Pool Settings
+
+For MySQL/PostgreSQL, configure connection pooling:
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `SQLALCHEMY_POOL_SIZE` | Number of connections to maintain | 10 |
+| `SQLALCHEMY_POOL_MAX_OVERFLOW` | Max additional connections | 20 |
+| `SQLALCHEMY_POOL_RECYCLE` | Recycle connections after (seconds) | 3600 |
+| `SQLALCHEMY_POOL_PRE_PING` | Verify connections before use | true |
+
+### Persistent Task Queue
+
+Tasks are now persisted in the database for reliability:
+
+- Tasks survive application restarts
+- Failed tasks can be retried
+- Queue statistics available at `/admin/dead-letter`
+
 **Reset database:**
 ```bash
 rm instance/sms.db
