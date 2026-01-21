@@ -11,6 +11,9 @@ from typing import Dict, Optional
 
 from smspanel.config import ConfigService, SMSConfig
 
+# Request timeout in seconds for SMS gateway requests
+SMS_REQUEST_TIMEOUT = 30
+
 
 class SMSError(Exception):
     """Exception raised for SMS service errors."""
@@ -69,7 +72,7 @@ class HKTSMSService:
                 config.base_url,
                 data=data,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
-                timeout=30,
+                timeout=SMS_REQUEST_TIMEOUT,
             )
 
             response.raise_for_status()

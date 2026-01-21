@@ -36,6 +36,9 @@ class Config:
     SQLALCHEMY_POOL_RECYCLE = 3600  # Recycle connections after 1 hour
     SQLALCHEMY_POOL_PRE_PING = True  # Verify connections before use
 
+    # SMS request timeout in seconds
+    SMS_REQUEST_TIMEOUT = 30
+
     # SMS Gateway
     SMS_BASE_URL = os.getenv("SMS_BASE_URL")
     SMS_APPLICATION_ID = os.getenv("SMS_APPLICATION_ID")
