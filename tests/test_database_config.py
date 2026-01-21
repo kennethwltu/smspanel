@@ -17,3 +17,14 @@ def test_pool_settings_configured():
     assert Config.SQLALCHEMY_POOL_MAX_OVERFLOW == 20
     assert Config.SQLALCHEMY_POOL_RECYCLE == 3600
     assert Config.SQLALCHEMY_POOL_PRE_PING is True
+
+
+def test_production_pool_settings():
+    """Production config should have proper pool settings."""
+    from smspanel.config.config import ProductionConfig
+
+    prod_config = ProductionConfig()
+    assert prod_config.SQLALCHEMY_POOL_SIZE == 10
+    assert prod_config.SQLALCHEMY_POOL_MAX_OVERFLOW == 20
+    assert prod_config.SQLALCHEMY_POOL_RECYCLE == 3600
+    assert prod_config.SQLALCHEMY_POOL_PRE_PING is True
