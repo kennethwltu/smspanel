@@ -1,6 +1,6 @@
 [project]
 name = "smspanel"
-version = "0.23.0"
+version = "0.24.0"
 description = "A simple SMS panel"
 readme = "README.md"
 requires-python = ">=3.10"
