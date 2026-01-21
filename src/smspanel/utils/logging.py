@@ -1,12 +1,10 @@
 """Standardized logging utilities."""
 
 import logging
-import traceback
 import uuid
-from datetime import datetime, timezone
 from typing import Any, Optional
 
-from flask import Flask, Request, g
+from flask import Flask, Request
 
 
 # Request ID context variable
@@ -111,6 +109,8 @@ def log_request(request: Request, status_code: int, duration_ms: float) -> None:
     }
 
     if status_code >= 400:
-        logger.warning(f"Request failed: {request.method} {request.path} -> {status_code}", extra=extra)
+        logger.warning(
+            f"Request failed: {request.method} {request.path} -> {status_code}", extra=extra
+        )
     else:
         logger.info(f"Request: {request.method} {request.path} -> {status_code}", extra=extra)

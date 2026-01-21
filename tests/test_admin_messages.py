@@ -1,5 +1,6 @@
 """Tests for admin messages route."""
 
+
 def test_admin_messages_route_exists():
     """Admin messages route should exist."""
     from smspanel import create_app
@@ -10,6 +11,7 @@ def test_admin_messages_route_exists():
         with app.app_context():
             from smspanel.models import User
             from smspanel import db
+
             admin = User.query.filter_by(username="SMSadmin").first()
             if admin:
                 admin.is_active = True
@@ -43,6 +45,7 @@ def test_admin_messages_route_filters():
         with app.app_context():
             from smspanel.models import User
             from smspanel import db
+
             admin = User.query.filter_by(username="SMSadmin").first()
             if admin:
                 admin.is_active = True

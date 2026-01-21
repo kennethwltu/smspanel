@@ -76,9 +76,7 @@ class Message(db.Model):
     """Message model for SMS messages."""
 
     __tablename__ = "messages"
-    __table_args__ = (
-        db.Index("ix_messages_user_id_created_at", "user_id", "created_at"),
-    )
+    __table_args__ = (db.Index("ix_messages_user_id_created_at", "user_id", "created_at"),)
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)

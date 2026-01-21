@@ -1,5 +1,6 @@
 """Tests for standardized error response format."""
 
+
 def test_error_response_has_nested_format(app):
     """Error responses should use nested {error: {...}} format."""
     from smspanel.api.responses import APIResponse

@@ -3,7 +3,6 @@
 from flask import Blueprint, jsonify
 from datetime import datetime, timezone
 import os
-import sys
 
 from smspanel import db
 
@@ -111,6 +110,7 @@ def _get_version() -> str:
     """
     try:
         from smspanel.config import config as config_dict
+
         env = getattr(config_dict, "FLASK_ENV", "unknown")
         return f"smspanel-{env}"
     except Exception:
