@@ -26,9 +26,7 @@ class RateLimiter:
         ...     pass
     """
 
-    def __init__(
-        self, rate_per_sec: float = 2.0, burst_capacity: Optional[float] = None
-    ) -> None:
+    def __init__(self, rate_per_sec: float = 2.0, burst_capacity: Optional[float] = None) -> None:
         self.rate_per_sec = rate_per_sec
         self.burst_capacity = burst_capacity if burst_capacity is not None else rate_per_sec
 
@@ -114,7 +112,9 @@ class RateLimiter:
 _rate_limiter: Optional[RateLimiter] = None
 
 
-def init_rate_limiter(rate_per_sec: float = 2.0, burst_capacity: Optional[float] = None) -> RateLimiter:
+def init_rate_limiter(
+    rate_per_sec: float = 2.0, burst_capacity: Optional[float] = None
+) -> RateLimiter:
     """Initialize the global rate limiter instance.
 
     Should be called during application startup.
@@ -148,7 +148,5 @@ def get_rate_limiter() -> RateLimiter:
     """
     global _rate_limiter
     if _rate_limiter is None:
-        raise RuntimeError(
-            "Rate limiter not initialized. Call init_rate_limiter() first."
-        )
+        raise RuntimeError("Rate limiter not initialized. Call init_rate_limiter() first.")
     return _rate_limiter
