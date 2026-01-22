@@ -4,7 +4,9 @@ from datetime import datetime, timezone, timedelta
 from flask import Blueprint, request, render_template, redirect, url_for, flash
 from flask_login import login_required, current_user
 
-from smspanel.models import Message
+from smspanel.models import Message, MessageJobStatus
+from smspanel.services.queue import get_task_queue
+from smspanel.utils.rate_limiter import get_rate_limiter
 from smspanel.utils.validation import (
     validate_enquiry_number,
     validate_message_content,
@@ -51,12 +53,29 @@ def dashboard():
     total_messages = Message.query.filter_by(user_id=current_user.id).count()
     total_sent = Message.query.filter_by(user_id=current_user.id, status="sent").count()
 
+    # Get queue status
+    queue = get_task_queue()
+    limiter = get_rate_limiter()
+
+    # Get user's pending messages
+    user_pending = Message.query.filter_by(
+        user_id=current_user.id,
+        job_status=MessageJobStatus.PENDING
+    ).count()
+
+    queue_status = {
+        "depth": queue.get_queue_size(),
+        "rate": limiter.rate_per_sec,
+        "user_pending": user_pending,
+    }
+
     return render_template(
         "dashboard.html",
         messages=messages,
         total_messages=total_messages,
         total_sent=total_sent,
         time_filter=time_filter,
+        queue_status=queue_status,
     )
 
 

@@ -20,6 +20,38 @@
         </div>
     </div>
 
+    {% if queue_status.depth > 0 or queue_status.user_pending > 0 %}
+    <div class="queue-status card mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">Queue Status</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="stat">
+                        <div class="stat-value">{{ queue_status.depth }}</div>
+                        <div class="stat-label">Messages in Queue</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat">
+                        <div class="stat-value">{{ queue_status.rate }}</div>
+                        <div class="stat-label"> msgs/sec</div>
+                    </div>
+                </div>
+                {% if queue_status.user_pending > 0 %}
+                <div class="col-md-4">
+                    <div class="stat">
+                        <div class="stat-value">{{ queue_status.user_pending }}</div>
+                        <div class="stat-label">Your Pending</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="messages-section">
         <div class="messages-header">
             <h2>Messages</h2>
