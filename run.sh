@@ -25,7 +25,9 @@ podman-compose down
 # Rebuild with the new changes and start fresh
 podman-compose up -d --build
 
+sleep 30
+
 # Check the logs to verify everything is working
-podman-compose logs -f
+podman-compose logs
 
 #podman-compose run smspanel bash
