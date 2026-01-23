@@ -1,8 +1,6 @@
 name: name
 on:
   push:
-    paths:
-    - */*
   #workflow_dispatch: ## need gitea 1.23
   #  inputs:
   #    EMAIL_RCPT:
