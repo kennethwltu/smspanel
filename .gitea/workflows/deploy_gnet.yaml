@@ -1,0 +1,90 @@
+name: name
+on:
+  push:
+    paths:
+    - */*
+  #workflow_dispatch: ## need gitea 1.23
+  #  inputs:
+  #    EMAIL_RCPT:
+  #      type: string
+  #      default: kennethwltu@labour.gov.hk
+  #      required: true
+  #schedule:
+  #  - cron: "@daily"
+
+env:
+    VM_port: 22
+    VM_username: admin
+    GITEA_URL: http://10.34.60.246:3200
+    SMTP_URL: smtp://10.34.63.120:25
+    EMAIL_SUBJECT: deploy SMS Panel [${{gitea.event.commits[0].message}}]
+      
+jobs:
+  job1:
+    env:
+      VM_IP: 10.34.60.243
+      VM_userpass: ${{secrets.VM_USERPASS_GRAFANA}}
+    runs-on: host
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - name: start email
+      run: |
+        curl --url '${{env.SMTP_URL}}' \
+        --mail-rcpt 'kennethwltu@labour.gov.hk' \
+        --mail-rcpt 'kennethwltu@labour.gov.hk' \
+        -T <(echo -e 'From: runner@gitea\nTo: user@gitea\nSubject: START-${{env.EMAIL_SUBJECT}}\n\n.')
+    - name: git clone
+      run: |
+        git clone ${{env.GITEA_URL}}/${{gitea.repository}} .
+        ls -alth
+    - name: deploy
+      run: |
+        sshpass -p "${{env.VM_userpass}}" scp -oStrictHostkeyChecking=no -oUserKnownHostsFile=/dev/null -P ${{env.VM_port}} \
+          -r ./** ${{env.VM_username}}@${{env.VM_IP}}:/home/${{env.VM_username}}/deploy_smspanel
+          
+        sshpass -p "${{env.VM_userpass}}" ssh -oStrictHostkeyChecking=no -oUserKnownHostsFile=/dev/null -p ${{env.VM_port}} ${{env.VM_username}}@${{env.VM_IP}} << EOF 
+          cp -rf deploy_smspanel/* smspanel
+          cd smspanel
+          bash run.sh
+          exit
+        EOF
+
+    - name: success email
+      if: steps.deploy.outcome != 'failure'
+      run: |
+        curl --url '${{env.SMTP_URL}}' \
+        --mail-rcpt 'kennethwltu@labour.gov.hk' \
+        --mail-rcpt 'kennethwltu@labour.gov.hk' \
+        -T <(echo -e 'From: runner@gitea\nTo: user@gitea\nSubject: SUCCESS-${{env.EMAIL_SUBJECT}}\n\n.')
+    - name: error email
+      if: steps.deploy.outcome == 'failure'
+      run: |
+        curl --url '${{env.SMTP_URL}}' \
+        --mail-rcpt 'kennethwltu@labour.gov.hk' \
+        --mail-rcpt 'kennethwltu@labour.gov.hk' \
+        -T <(echo -e 'From: runner@gitea\nTo: user@gitea\nSubject: FAIL-${{env.EMAIL_SUBJECT}}\n\n.')
+
+  #job-debug:
+  #  runs-on: host
+  #  defaults:
+  #    run:
+  #      shell: bash
+  #  steps:
+  #  - name: Debug all var
+  #    run: |
+  #        echo "=== GITEA CONTEXT ==="
+  #        echo "${{toJSON(gitea)}}"
+  #        echo "=== RUNNER CONTEXT ==="
+  #        echo "${{toJSON(runner)}}"
+  #        echo "=== ENV CONTEXT ==="
+  #        echo "${{toJSON(env)}}"
+  #        echo "=== JOB CONTEXT ==="
+  #        echo "${{toJSON(job)}}"
+  #        echo "=== STEPS CONTEXT ==="
+  #        echo "${{toJSON(steps)}}"
+  #        echo "=== SECRETS CONTEXT (will be masked) ==="
+  #        echo "${{toJSON(secrets)}}"
+  #        echo ""
+  

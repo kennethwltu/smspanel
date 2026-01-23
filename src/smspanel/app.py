@@ -79,9 +79,45 @@ def _load_config(app: Flask, config_name: Optional[str]) -> None:
         app: Flask application instance.
         config_name: Configuration name.
     """
+    import os
+    import tempfile
+    import stat
     from smspanel.config import config as config_dict
 
     app.config.from_object(config_dict.get(config_name, config_dict["default"]))
+
+    # For Docker environments, always use /tmp/sms.db to avoid SQLite volume issues
+    # Check if we're running in Docker by checking for /app directory
+    if os.path.exists('/app'):
+        print("Running in Docker container, using /tmp/sms.db to avoid volume permission issues")
+        tmp_db_path = '/tmp/sms.db'
+        app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{tmp_db_path}'
+    else:
+        # For non-Docker environments, check if SQLite database directory is writable
+        db_url = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+        if db_url.startswith('sqlite:///'):
+            db_path = db_url[10:]  # Remove 'sqlite:///'
+            db_dir = os.path.dirname(db_path) if os.path.dirname(db_path) else '.'
+            
+            # Check if directory is writable
+            # Try to create a test file to check writability
+            test_file = os.path.join(db_dir, '.write_test')
+            try:
+                # Try to create directory if it doesn't exist
+                if db_dir and not os.path.exists(db_dir):
+                    os.makedirs(db_dir, exist_ok=True)
+                
+                # Try to write a test file
+                with open(test_file, 'w') as f:
+                    f.write('test')
+                os.unlink(test_file)
+                print(f"Database directory {db_dir} is writable, using {db_path}")
+            except Exception as e:
+                # Directory is not writable, use /tmp instead
+                print(f"Database directory {db_dir} is not writable: {e}")
+                tmp_db_path = os.path.join(tempfile.gettempdir(), 'sms.db')
+                app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{tmp_db_path}'
+                print(f"Using temporary database: {tmp_db_path}")
 
     # Initialize config service for SMS
     config_service = ConfigService(
@@ -178,31 +214,39 @@ def _ensure_admin_user(app: Flask) -> None:
     from os import getenv
 
     with app.app_context():
-        db.create_all()
-        admin_user = User.query.filter_by(username="SMSadmin").first()
-        if admin_user is None:
-            # Get admin password from env or generate one
-            admin_password = getenv("ADMIN_PASSWORD")
-            if admin_password is None:
-                # Generate a secure random password
-                alphabet = string.ascii_letters + string.digits
-                admin_password = "".join(secrets.choice(alphabet) for _ in range(16))
-                # In production, log warning about generated password
-                if not app.config.get("DEBUG", True):
-                    app.logger.warning(
-                        "Admin password was auto-generated. "
-                        "Set ADMIN_PASSWORD environment variable to prevent this."
-                    )
+        try:
+            db.create_all()
+            print("Database tables created successfully.")
+            
+            # Create admin user if it doesn't exist
+            admin_user = User.query.filter_by(username="SMSadmin").first()
+            if admin_user is None:
+                # Get admin password from env or generate one
+                admin_password = getenv("ADMIN_PASSWORD")
+                if admin_password is None:
+                    # Generate a secure random password
+                    alphabet = string.ascii_letters + string.digits
+                    admin_password = "".join(secrets.choice(alphabet) for _ in range(16))
+                    # In production, log warning about generated password
+                    if not app.config.get("DEBUG", True):
+                        app.logger.warning(
+                            "Admin password was auto-generated. "
+                            "Set ADMIN_PASSWORD environment variable to prevent this."
+                        )
 
-            admin = User(username="SMSadmin")
-            admin.set_password(admin_password)
-            admin.token = User.generate_token()
-            admin.is_admin = True
-            admin.is_active = True
+                admin = User(username="SMSadmin")
+                admin.set_password(admin_password)
+                admin.token = User.generate_token()
+                admin.is_admin = True
+                admin.is_active = True
 
-            db.session.add(admin)
-            db.session.commit()
+                db.session.add(admin)
+                db.session.commit()
 
-            # Log the generated password in development only
-            if getenv("ADMIN_PASSWORD") is None and app.config.get("DEBUG", False):
-                print(f"\n[DEV] Generated admin password: {admin_password}\n")
+                # Log the generated password in development only
+                if getenv("ADMIN_PASSWORD") is None and app.config.get("DEBUG", False):
+                    print(f"\n[DEV] Generated admin password: {admin_password}\n")
+        except Exception as e:
+            print(f"Failed to create database or admin user: {e}")
+            print("App will start without admin user. Database operations may fail.")
+            # Don't raise - allow app to start without admin user

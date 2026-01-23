@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  smspanel:
+    build:
+      context: .
+      args:
+        - PROXY_USER=${PROXY_USER}
+        - PROXY_PASSWORD=${PROXY_PASSWORD}
+        - PROXY_HOST=${PROXY_HOST}
+        - PROXY_PORT=${PROXY_PORT}
+    ports:
+      - "3570:3570"
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - SMS_BASE_URL=${SMS_BASE_URL}
+      - SMS_APPLICATION_ID=${SMS_APPLICATION_ID}
+      - SMS_SENDER_NUMBER=${SMS_SENDER_NUMBER}
+      - HTTP_PROXY=http://${PROXY_USER}:${PROXY_PASSWORD}@${PROXY_HOST}:${PROXY_PORT}
+      - HTTPS_PROXY=http://${PROXY_USER}:${PROXY_PASSWORD}@${PROXY_HOST}:${PROXY_PORT}
+      - http_proxy=http://${PROXY_USER}:${PROXY_PASSWORD}@${PROXY_HOST}:${PROXY_PORT}
+      - https_proxy=http://${PROXY_USER}:${PROXY_PASSWORD}@${PROXY_HOST}:${PROXY_PORT}
+      - NO_PROXY=${NO_PROXY}
+      - no_proxy=${NO_PROXY}
+      - smspanel-network
+    volumes:
+      - smspanel_data:/app/instance
+    #command: tail -f /dev/null
+    restart: unless-stopped
+    
+  mock_sms:
+    build:
+      context: .
+      args:
+        - PROXY_USER=${PROXY_USER}
+        - PROXY_PASSWORD=${PROXY_PASSWORD}
+        - PROXY_HOST=${PROXY_HOST}
+        - PROXY_PORT=${PROXY_PORT}
+    ports:
+      - "5555:5555"
+    environment:
+      - FLASK_ENV=production
+      - HTTP_PROXY=http://${PROXY_USER}:${PROXY_PASSWORD}@${PROXY_HOST}:${PROXY_PORT}
+      - HTTPS_PROXY=http://${PROXY_USER}:${PROXY_PASSWORD}@${PROXY_HOST}:${PROXY_PORT}
+      - http_proxy=http://${PROXY_USER}:${PROXY_PASSWORD}@${PROXY_HOST}:${PROXY_PORT}
+      - https_proxy=http://${PROXY_USER}:${PROXY_PASSWORD}@${PROXY_HOST}:${PROXY_PORT}
+      - NO_PROXY=${NO_PROXY}
+      - no_proxy=${NO_PROXY}
+    networks:
+      - smspanel-network
+    command: python scripts/mock_sms_api.py
+    #command: tail -f /dev/null
+    restart: unless-stopped
+    
+volumes:
+  smspanel_data:
+    driver: local
+
+networks:
+  smspanel-network:
+    driver: bridge
+
+# semanage port -a -t http_port_t -p tcp 3570
+# firewall-cmd --permanent --zone=public --add-port=3570/tcp
+# firewall-cmd --permanent --list-all-zones
+# firewall-cmd --set-default-zone public
+# firewall-cmd --reload

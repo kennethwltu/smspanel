@@ -57,4 +57,4 @@ if __name__ == "__main__":
     print(f"Gateway endpoint: http://{host}:{port}/gateway/gateway.jsp")
     print(f"Health check: http://{host}:{port}/health")
 
-    app.run(host=host, port=port, debug=debug)
+    app.run(host='0.0.0.0', port=port, debug=debug)
