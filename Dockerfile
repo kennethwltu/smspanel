@@ -20,23 +20,17 @@ RUN mkdir -p /root/.pip && \
     echo "proxy = http://${PROXY_USER}:${PROXY_PASSWORD}@${PROXY_HOST}:${PROXY_PORT}" >> /root/.pip/pip.conf && \
     echo 'trusted-host = pypi.org files.pythonhosted.org' >> /root/.pip/pip.conf
 
-## Install gosu for switching users
-#RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
-
-## Create non-root user
-#RUN groupadd -r appuser && useradd -r -g appuser -m -d /app -s /bin/bash appuser
-
 # Create app directory and set permissions
 WORKDIR /app
 
 ## Copy application code
-COPY . .
-
-## Install the smspanel package in editable mode
-#RUN mkdir -p /app/instance && chown -R appuser:appuser /app/instance
+COPY requirements.txt requirements.txt
 
 # Install dependencies
 RUN pip install -r requirements.txt
+
+## Copy application code
+COPY . .
 
 # Install the smspanel package in development mode
 RUN pip install -e .
