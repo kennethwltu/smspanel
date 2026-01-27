@@ -50,6 +50,7 @@
 
         {% if current_status == 'pending' %}
         <form action="{{ url_for('web_dead_letter.retry_all_dead_letter') }}" method="POST" style="display: inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-primary"
                     onclick="return confirm('Retry all pending messages?')">
                 Retry All Pending
@@ -88,12 +89,14 @@
                     <td>
                         {% if msg.status == 'pending' and msg.can_retry() %}
                         <form action="{{ url_for('web_dead_letter.retry_dead_letter', message_id=msg.id) }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-primary">Retry</button>
                         </form>
                         {% endif %}
 
                         {% if msg.status == 'pending' %}
                         <form action="{{ url_for('web_dead_letter.abandon_dead_letter', message_id=msg.id) }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-secondary"
                                     onclick="return confirm('Abandon this message?')">
                                 Abandon

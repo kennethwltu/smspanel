@@ -37,11 +37,13 @@ RUN pip install -e .
 
 # Set environment variables for other tools (curl, wget, pip, etc.)
 ENV HTTP_PROXY=
-ENV HTTPS_PROXY=h
+ENV HTTPS_PROXY=
 ENV NO_PROXY=
 ENV http_proxy=
 ENV https_proxy=
 ENV no_proxy=
+
+RUN rm -f /root/.pip/pip.conf
 
 # Default command
 CMD ["python", "run.py"]

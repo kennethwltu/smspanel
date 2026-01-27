@@ -68,11 +68,19 @@ class HKTSMSService:
         }
 
         try:
+            # Check if we're connecting to mock_sms service
+            # If so, don't use proxy to avoid connection issues
+            proxies = {}
+            if "mock_sms" in config.base_url:
+                # Explicitly disable proxy for mock_sms connections
+                proxies = {"http": None, "https": None}
+            
             response = requests.post(
                 config.base_url,
                 data=data,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
                 timeout=SMS_REQUEST_TIMEOUT,
+                proxies=proxies,
             )
 
             response.raise_for_status()

@@ -25,6 +25,7 @@ services:
       - https_proxy=http://${PROXY_USER}:${PROXY_PASSWORD}@${PROXY_HOST}:${PROXY_PORT}
       - NO_PROXY=${NO_PROXY}
       - no_proxy=${NO_PROXY}
+    networks:
       - smspanel-network
     volumes:
       - smspanel_data:/app/instance

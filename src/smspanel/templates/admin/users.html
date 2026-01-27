@@ -53,6 +53,7 @@
                                     <a href="{{ url_for('web.web_admin.change_password', user_id=user.id) }}" class="btn btn-small">Password</a>
                                     {% if user.id != current_user.id %}
                                         <form action="{{ url_for('web.web_admin.toggle_active', user_id=user.id) }}" method="post" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <button type="submit" class="btn btn-small {{ 'btn-warning' if user.is_active else 'btn-success' }}">
                                                 {{ 'Disable' if user.is_active else 'Enable' }}
                                             </button>
@@ -60,6 +61,7 @@
                                         <a href="{{ url_for('web.web_admin.delete_user', user_id=user.id) }}" class="btn btn-small btn-danger">Delete</a>
                                     {% endif %}
                                     <form action="{{ url_for('web.web_admin.regenerate_token', user_id=user.id) }}" method="post" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-small btn-secondary">Regenerate Token</button>
                                     </form>
                                 </div>
