@@ -86,12 +86,33 @@ def _load_config(app: Flask, config_name: Optional[str]) -> None:
 
     app.config.from_object(config_dict.get(config_name, config_dict["default"]))
 
-    # For Docker environments, always use /tmp/sms.db to avoid SQLite volume issues
+    # For Docker environments, use the volume-mounted path /app/instance/sms.db
     # Check if we're running in Docker by checking for /app directory
     if os.path.exists('/app'):
-        print("Running in Docker container, using /tmp/sms.db to avoid volume permission issues")
-        tmp_db_path = '/tmp/sms.db'
-        app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{tmp_db_path}'
+        # Use the volume-mounted path for persistence
+        volume_db_path = '/app/instance/sms.db'
+        print(f"Running in Docker container, using volume-mounted database: {volume_db_path}")
+        app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{volume_db_path}'
+        
+        # Ensure the instance directory exists and is writable
+        instance_dir = '/app/instance'
+        try:
+            if not os.path.exists(instance_dir):
+                os.makedirs(instance_dir, exist_ok=True)
+                print(f"Created instance directory: {instance_dir}")
+            
+            # Test if directory is writable
+            test_file = os.path.join(instance_dir, '.write_test')
+            with open(test_file, 'w') as f:
+                f.write('test')
+            os.unlink(test_file)
+            print(f"Instance directory {instance_dir} is writable")
+        except Exception as e:
+            print(f"Warning: Instance directory {instance_dir} is not writable: {e}")
+            # Fallback to /tmp/sms.db if volume is not writable
+            tmp_db_path = '/tmp/sms.db'
+            app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{tmp_db_path}'
+            print(f"Falling back to temporary database: {tmp_db_path}")
     else:
         # For non-Docker environments, check if SQLite database directory is writable
         db_url = app.config.get('SQLALCHEMY_DATABASE_URI', '')
