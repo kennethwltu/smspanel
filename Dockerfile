@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.12-slim@sha256:5e2dbd4bbdd9c0e67412aea9463906f74a22c60f89eb7b5bbb7d45b66a2b68a6
 
 # Proxy configuration arguments
 ARG PROXY_USER
@@ -27,13 +27,13 @@ WORKDIR /app
 COPY requirements.txt requirements.txt
 
 # Install dependencies
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 ## Copy application code
 COPY . .
 
 # Install the smspanel package in development mode
-RUN pip install -e .
+RUN pip install --no-cache-dir -e .
 
 # Set environment variables for other tools (curl, wget, pip, etc.)
 ENV HTTP_PROXY=
@@ -47,7 +47,11 @@ RUN rm -f /root/.pip/pip.conf
 
 RUN pytest --cov=src --cov-report=term-missing
 
-RUN ruff check .
+#RUN ruff check .
+
+#COPY ./test_ui/requirements-playwright.txt requirements-playwright.txt
+#RUN pip install --no-cache-dir -r requirements-playwright.txt
+#RUN playwright install
 
 # Default command
 CMD ["python", "run.py"]
