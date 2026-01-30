@@ -60,7 +60,7 @@ def retry_dead_letter(message_id: int):
     else:
         flash(f"Dead letter {message_id} cannot be retried (max retries exceeded).", "error")
 
-    return redirect(url_for("web_dead_letter.list_dead_letter"))
+    return redirect(url_for("web.web_dead_letter.list_dead_letter"))
 
 
 @web_dead_letter_bp.route("/abandon/<int:message_id>", methods=["POST"])
@@ -75,7 +75,7 @@ def abandon_dead_letter(message_id: int):
     else:
         flash(f"Dead letter {message_id} not found.", "error")
 
-    return redirect(url_for("web_dead_letter.list_dead_letter"))
+    return redirect(url_for("web.web_dead_letter.list_dead_letter"))
 
 
 @web_dead_letter_bp.route("/retry-all", methods=["POST"])
@@ -92,4 +92,4 @@ def retry_all_dead_letter():
             retry_count += 1
 
     flash(f"{retry_count} dead letter messages queued for retry.", "success")
-    return redirect(url_for("web_dead_letter.list_dead_letter"))
+    return redirect(url_for("web.web_dead_letter.list_dead_letter"))
