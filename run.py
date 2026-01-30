@@ -8,7 +8,7 @@ src_dir = os.path.join(os.path.dirname(__file__), 'src')
 if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
 
-from smspanel import create_app
+from smspanel import create_app  # noqa: E402
 
 app = create_app(os.getenv("FLASK_ENV", "development"))
 

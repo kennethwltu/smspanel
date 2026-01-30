@@ -45,5 +45,9 @@ ENV no_proxy=
 
 RUN rm -f /root/.pip/pip.conf
 
+RUN pytest --cov=src --cov-report=term-missing
+
+RUN ruff check .
+
 # Default command
 CMD ["python", "run.py"]

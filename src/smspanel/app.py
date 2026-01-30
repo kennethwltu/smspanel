@@ -81,7 +81,6 @@ def _load_config(app: Flask, config_name: Optional[str]) -> None:
     """
     import os
     import tempfile
-    import stat
     from smspanel.config import config as config_dict
 
     app.config.from_object(config_dict.get(config_name, config_dict["default"]))
@@ -117,7 +116,14 @@ def _load_config(app: Flask, config_name: Optional[str]) -> None:
         # For non-Docker environments, check if SQLite database directory is writable
         db_url = app.config.get('SQLALCHEMY_DATABASE_URI', '')
         if db_url.startswith('sqlite:///'):
+            # Handle Windows paths properly
             db_path = db_url[10:]  # Remove 'sqlite:///'
+            
+            # On Windows, convert forward slashes to backslashes for os.path operations
+            if os.name == 'nt':  # Windows
+                # Handle Windows drive letters (e.g., C:/Users/...)
+                db_path = db_path.replace('/', '\\')
+            
             db_dir = os.path.dirname(db_path) if os.path.dirname(db_path) else '.'
             
             # Check if directory is writable
@@ -134,7 +140,7 @@ def _load_config(app: Flask, config_name: Optional[str]) -> None:
                 os.unlink(test_file)
                 print(f"Database directory {db_dir} is writable, using {db_path}")
             except Exception as e:
-                # Directory is not writable, use /tmp instead
+                # Directory is not writable, use temp directory instead
                 print(f"Database directory {db_dir} is not writable: {e}")
                 tmp_db_path = os.path.join(tempfile.gettempdir(), 'sms.db')
                 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{tmp_db_path}'

@@ -31,25 +31,25 @@
 
     <!-- Filters -->
     <div class="filter-bar">
-        <a href="{{ url_for('web_dead_letter.list_dead_letter') }}"
+        <a href="{{ url_for('web.web_dead_letter.list_dead_letter') }}"
            class="btn {{ 'btn-primary' if not current_status else 'btn-secondary' }}">
             All
         </a>
-        <a href="{{ url_for('web_dead_letter.list_dead_letter', status='pending') }}"
+        <a href="{{ url_for('web.web_dead_letter.list_dead_letter', status='pending') }}"
            class="btn {{ 'btn-primary' if current_status == 'pending' else 'btn-secondary' }}">
             Pending
         </a>
-        <a href="{{ url_for('web_dead_letter.list_dead_letter', status='retried') }}"
+        <a href="{{ url_for('web.web_dead_letter.list_dead_letter', status='retried') }}"
            class="btn {{ 'btn-primary' if current_status == 'retried' else 'btn-secondary' }}">
             Retried
         </a>
-        <a href="{{ url_for('web_dead_letter.list_dead_letter', status='abandoned') }}"
+        <a href="{{ url_for('web.web_dead_letter.list_dead_letter', status='abandoned') }}"
            class="btn {{ 'btn-primary' if current_status == 'abandoned' else 'btn-secondary' }}">
             Abandoned
         </a>
 
         {% if current_status == 'pending' %}
-        <form action="{{ url_for('web_dead_letter.retry_all_dead_letter') }}" method="POST" style="display: inline;">
+        <form action="{{ url_for('web.web_dead_letter.retry_all_dead_letter') }}" method="POST" style="display: inline;">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-primary"
                     onclick="return confirm('Retry all pending messages?')">

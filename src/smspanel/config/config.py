@@ -101,6 +101,11 @@ class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     WTF_CSRF_ENABLED = False
 
+    # Set a test SECRET_KEY for testing environment
+    SECRET_KEY = "test-secret-key-for-testing-environment-only"
+    # Also set CSRF secret key to the same value
+    WTF_CSRF_SECRET_KEY = "test-secret-key-for-testing-environment-only"
+
     # SMS Gateway (for testing)
     SMS_BASE_URL = "https://test-sms-gateway.example.com/gateway/gateway.jsp"
     SMS_APPLICATION_ID = "test-app"

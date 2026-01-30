@@ -18,6 +18,9 @@
 
 podman ps -a
 
+# Rebuild with the new changes and start fresh
+podman-compose build
+
 # Stop and remove existing containers
 podman-compose down
 

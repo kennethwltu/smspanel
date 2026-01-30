@@ -5,7 +5,7 @@ def test_admin_messages_route_exists():
     """Admin messages route should exist."""
     from smspanel import create_app
 
-    app = create_app()
+    app = create_app("testing")
     with app.test_client() as client:
         # Enable admin for testing
         with app.app_context():
@@ -27,7 +27,7 @@ def test_admin_messages_route_requires_admin():
     """Admin messages route should require admin privileges."""
     from smspanel import create_app
 
-    app = create_app()
+    app = create_app("testing")
     with app.test_client() as client:
         # Test without admin - should redirect or show forbidden
         response = client.get("/admin/messages", follow_redirects=True)
@@ -39,7 +39,7 @@ def test_admin_messages_route_filters():
     """Admin messages route should accept filter parameters."""
     from smspanel import create_app
 
-    app = create_app()
+    app = create_app("testing")
     with app.test_client() as client:
         # Enable admin for testing
         with app.app_context():
