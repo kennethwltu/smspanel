@@ -374,22 +374,22 @@ class TestLoginPageBaseline:
         
         # Test phone number validation
         recipients_textarea = page.locator("#recipients")
-        recipients_textarea.fill("1234")  # Invalid format
+        recipients_textarea.fill("+8521234")  # Invalid format (only 4 digits)
         self.take_baseline_screenshot(page, "invalid_phone")
-        
+
         recipients_textarea.blur()
-        
-        recipients_textarea.fill("1234 5678")
+
+        recipients_textarea.fill("+85212345678")
         recipients_textarea.blur()
         self.take_baseline_screenshot(page, "valid_phone")
         
         # Test enquiry number validation
         enquiry_input = page.locator("#enquiry_number")
-        enquiry_input.fill("1234")  # Invalid
+        enquiry_input.fill("+8521234")  # Invalid (only 4 digits)
         enquiry_input.blur()
         self.take_baseline_screenshot(page, "invalid_enquiry")
         
-        enquiry_input.fill("1234 5678")  # Valid
+        enquiry_input.fill("+85212345678")  # Valid
         enquiry_input.blur()
         self.take_baseline_screenshot(page, "valid_enquiry")
     

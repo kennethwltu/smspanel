@@ -896,7 +896,7 @@ class TestHistoryPageBaseline:
             phone_search = page.locator("input[name='recipient_phone']")
             if phone_search.count() > 0:
                 expect(phone_search).to_be_visible()
-                phone_search.fill("85212345678")
+                phone_search.fill("+85212345678")
                 self.take_baseline_screenshot(page, "phone_search")
             
             # Multiple status selection

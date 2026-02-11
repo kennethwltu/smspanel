@@ -40,7 +40,7 @@ class TestSMSAPI:
         """Test sending SMS without authorization."""
         response = client.post(
             "/api/sms",
-            json={"recipient": "85212345678", "content": "Test"},
+            json={"recipient": "+85212345678", "content": "Test"},
         )
         assert response.status_code == 401
         data = response.json
@@ -50,7 +50,7 @@ class TestSMSAPI:
 
     def test_send_sms_missing_fields(self, client, auth_headers):
         """Test sending SMS with missing fields."""
-        response = client.post("/api/sms", json={"recipient": "85212345678"}, headers=auth_headers)
+        response = client.post("/api/sms", json={"recipient": "+85212345678"}, headers=auth_headers)
         assert response.status_code == 400
         data = response.json
         assert "error" in data
@@ -61,7 +61,7 @@ class TestSMSAPI:
         """Test sending SMS to HKT (will be queued)."""
         response = client.post(
             "/api/sms",
-            json={"recipient": "85212345678", "content": "Test message"},
+            json={"recipient": "+85212345678", "content": "Test message"},
             headers=auth_headers,
         )
         # SMS should be queued and return 202
@@ -75,14 +75,14 @@ class TestSMSAPI:
         """Test sending bulk SMS without authorization."""
         response = client.post(
             "/api/sms/send-bulk",
-            json={"recipients": ["85212345678"], "content": "Test"},
+            json={"recipients": ["+85212345678"], "content": "Test"},
         )
         assert response.status_code == 401
 
     def test_send_bulk_sms_missing_fields(self, client, auth_headers):
         """Test sending bulk SMS with missing fields."""
         response = client.post(
-            "/api/sms/send-bulk", json={"recipients": ["85212345678"]}, headers=auth_headers
+            "/api/sms/send-bulk", json={"recipients": ["+85212345678"]}, headers=auth_headers
         )
         assert response.status_code == 400
         data = response.json

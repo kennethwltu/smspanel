@@ -14,12 +14,12 @@
                 name="recipients"
                 rows="4"
                 required
-                placeholder="Enter phone numbers (one per line)&#10;Example:&#10;1234 5678&#10;12345678"
+                placeholder="Enter phone numbers (one per line)&#10;Example:&#10;+85212345678&#10;+85298765432"
                 onblur="validateRecipients()"
                 oninput="updateCharCount()"
             >{{ recipients }}</textarea>
             <small id="recipients-error" class="error-message"></small>
-            <small>Enter one phone number per line. Format: 4 digits, optional space, 4 digits (e.g., 1234 5678 or 12345678)</small>
+            <small>Enter one phone number per line. Format: +852 followed by 8 digits (e.g., +85212345678)</small>
         </div>
         <div class="form-group">
             <label for="content">Message</label>
@@ -63,7 +63,7 @@
     const recipientsTextarea = document.getElementById('recipients');
     const charCount = document.getElementById('char-count');
 
-    const PHONE_REGEX = /^\d{4}\s?\d{4}$/;
+    const PHONE_REGEX = /^\+852\d{8}$/;
     const ENQUIRY_REGEX = /^\d{4}\s?\d{4}$/;
 
     function updateCharCount() {

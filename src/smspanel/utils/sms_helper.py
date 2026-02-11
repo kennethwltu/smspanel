@@ -137,7 +137,7 @@ def process_single_sms_task(message_id: int, recipient: str) -> None:
 
     Args:
         message_id: Message ID in database.
-        recipient: Phone number to send to.
+        recipient: Phone number to send to (8-digit format).
     """
     message = Message.query.get(message_id)
     if not message:
@@ -150,7 +150,9 @@ def process_single_sms_task(message_id: int, recipient: str) -> None:
         return
 
     sms_service = get_sms_service()
-    result = sms_service.send_single(recipient, message.content)
+    # Convert 8-digit format to "85212345678" format for SMS service
+    formatted_recipient = f"852{recipient}"
+    result = sms_service.send_single(formatted_recipient, message.content)
 
     update_single_sms_status(message, recipient_record, result)
     db.session.commit()
@@ -161,7 +163,7 @@ def process_bulk_sms_task(message_id: int, recipients: list[str]) -> None:
 
     Args:
         message_id: Message ID in database.
-        recipients: List of phone numbers to send to.
+        recipients: List of phone numbers to send to (8-digit format).
     """
     message = Message.query.get(message_id)
     if not message:
@@ -169,7 +171,9 @@ def process_bulk_sms_task(message_id: int, recipients: list[str]) -> None:
         return
 
     sms_service = get_sms_service()
-    result = sms_service.send_bulk(recipients, message.content)
+    # Convert 8-digit format to "85212345678" format for SMS service
+    formatted_recipients = [f"852{recipient}" for recipient in recipients]
+    result = sms_service.send_bulk(formatted_recipients, message.content)
 
     update_message_status_from_result(message, result)
     db.session.commit()

@@ -6,6 +6,7 @@ from smspanel import db
 from smspanel.models import User, Message, Recipient
 from smspanel.services.queue import get_task_queue
 from smspanel.utils.sms_helper import process_single_sms_task, process_bulk_sms_task
+from smspanel.utils.validation import validate_recipient_list, format_phone_error
 from smspanel.api.responses import (
     APIResponse,
     unauthorized,
@@ -84,7 +85,7 @@ def send_sms() -> tuple:
     """Send a single SMS message (asynchronous).
 
     Request body (JSON):
-        recipient: str - Phone number
+        recipient: str - Phone number (format: +85212345678)
         content: str - Message content
 
     Returns:
@@ -98,19 +99,32 @@ def send_sms() -> tuple:
     recipient = data.get("recipient")
     content = data.get("content")
 
+    # Validate phone number format
+    valid_recipients, invalid_numbers = validate_recipient_list([recipient])
+    
+    if invalid_numbers:
+        return bad_request(
+            f"Invalid phone number format: {', '.join(invalid_numbers)}. "
+            "Phone number must be in format: +852 followed by 8 digits (e.g., +85212345678).",
+            "INVALID_PHONE_FORMAT"
+        )
+
+    # Extract the 8-digit part (without +852 prefix) for storage
+    phone_digits = valid_recipients[0]
+
     # Create message record
     message = Message(user_id=user.id, content=content, status="pending")
     db.session.add(message)
     db.session.flush()
 
-    # Create recipient record
-    recipient_record = Recipient(message_id=message.id, phone=recipient, status="pending")
+    # Create recipient record with 8-digit format
+    recipient_record = Recipient(message_id=message.id, phone=phone_digits, status="pending")
     db.session.add(recipient_record)
     db.session.commit()
 
-    # Enqueue background task
+    # Enqueue background task with 8-digit format
     task_queue = get_task_queue()
-    enqueued = task_queue.enqueue(process_single_sms_task, message.id, recipient)
+    enqueued = task_queue.enqueue(process_single_sms_task, message.id, phone_digits)
 
     if not enqueued:
         return service_unavailable()
@@ -119,7 +133,7 @@ def send_sms() -> tuple:
         data={
             "id": message.id,
             "status": "pending",
-            "recipient": recipient,
+            "recipient": recipient,  # Return original format with +852
             "content": content,
             "created_at": message.created_at.isoformat(),
         },
@@ -134,7 +148,7 @@ def send_bulk_sms() -> tuple:
     """Send SMS messages to multiple recipients (asynchronous).
 
     Request body (JSON):
-        recipients: list[str] - List of phone numbers
+        recipients: list[str] - List of phone numbers (format: +85212345678)
         content: str - Message content
 
     Returns:
@@ -152,21 +166,31 @@ def send_bulk_sms() -> tuple:
     if not recipients:
         return bad_request("Recipients list cannot be empty", "MISSING_FIELDS")
 
+    # Validate phone number format
+    valid_recipients, invalid_numbers = validate_recipient_list(recipients)
+    
+    if invalid_numbers:
+        return bad_request(
+            f"Invalid phone number format: {', '.join(invalid_numbers)}. "
+            "Phone numbers must be in format: +852 followed by 8 digits (e.g., +85212345678).",
+            "INVALID_PHONE_FORMAT"
+        )
+
     # Create message record
     message = Message(user_id=user.id, content=content, status="pending")
     db.session.add(message)
     db.session.flush()
 
-    # Create recipient records
-    for recipient in recipients:
-        recipient_record = Recipient(message_id=message.id, phone=recipient, status="pending")
+    # Create recipient records with 8-digit format
+    for phone_digits in valid_recipients:
+        recipient_record = Recipient(message_id=message.id, phone=phone_digits, status="pending")
         db.session.add(recipient_record)
 
     db.session.commit()
 
-    # Enqueue background task
+    # Enqueue background task with 8-digit format
     task_queue = get_task_queue()
-    enqueued = task_queue.enqueue(process_bulk_sms_task, message.id, recipients)
+    enqueued = task_queue.enqueue(process_bulk_sms_task, message.id, valid_recipients)
 
     if not enqueued:
         return service_unavailable()
@@ -175,7 +199,7 @@ def send_bulk_sms() -> tuple:
         data={
             "id": message.id,
             "status": "pending",
-            "total": len(recipients),
+            "total": len(recipients),  # Return original count
             "content": content,
             "created_at": message.created_at.isoformat(),
         },
