@@ -142,7 +142,9 @@ def compose():
         from smspanel.utils.sms_helper import get_sms_service
 
         sms_service = get_sms_service()
-        result = sms_service.send_bulk(valid_recipients, sms_content)
+        # Convert 8-digit format to "85212345678" format for SMS service
+        formatted_recipients = [f"852{recipient}" for recipient in valid_recipients]
+        result = sms_service.send_bulk(formatted_recipients, sms_content)
 
         # Update message status based on result
         with db_transaction() as session:

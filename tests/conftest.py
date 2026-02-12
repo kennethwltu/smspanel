@@ -93,7 +93,7 @@ def test_message(app):
         db.session.add(message)
         db.session.flush()
 
-        recipient = Recipient(message_id=message.id, phone="85212345678", status="sent")
+        recipient = Recipient(message_id=message.id, phone="12345678", status="sent")
         db.session.add(recipient)
         db.session.commit()
         message_id = message.id

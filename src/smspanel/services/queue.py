@@ -26,13 +26,12 @@ class TaskQueue:
             num_workers: Number of background worker threads.
             max_queue_size: Maximum number of tasks to queue.
         """
-        self.queue: queue.Queue = queue.Queue(maxsize=max_queue_size)
+        self.queue: queue.PriorityQueue = queue.PriorityQueue(maxsize=max_queue_size)
         self.workers: list[threading.Thread] = []
         self.num_workers = num_workers
         self.running = False
         self.app = None
         self.rate_limiter: Optional[RateLimiter] = None
-
     def set_app(self, app):
         """Set the Flask app for app context.
 
@@ -41,19 +40,21 @@ class TaskQueue:
         """
         self.app = app
 
-    def enqueue(self, task_func, *args, **kwargs) -> bool:
+    def enqueue(self, task_func, *args, priority: int = 1, **kwargs) -> bool:
         """Add a task to the queue.
 
         Args:
             task_func: Function to execute.
             *args: Positional arguments for task_func.
+            priority: Priority level (0=highest, 1=normal, 2=low, etc.). Default is 1.
             **kwargs: Keyword arguments for task_func.
 
         Returns:
             True if task was enqueued, False if queue is full.
         """
         try:
-            self.queue.put((task_func, args, kwargs), block=False)
+            # PriorityQueue requires (priority, data) format
+            self.queue.put((priority, (task_func, args, kwargs)), block=False)
             return True
         except queue.Full:
             logger.warning("Task queue is full, rejecting task")
@@ -70,7 +71,8 @@ class TaskQueue:
         logger.info(f"Worker {worker_id} started")
         while self.running:
             try:
-                task_func, args, kwargs = self.queue.get(timeout=1.0)
+                # PriorityQueue returns (priority, (task_func, args, kwargs))
+                priority, (task_func, args, kwargs) = self.queue.get(timeout=1.0)
                 # Check if this is an SMS task that needs job status tracking
                 is_sms_task = (
                     hasattr(task_func, "__name__")

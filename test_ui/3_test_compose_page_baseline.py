@@ -7,9 +7,6 @@ import pytest
 import re
 import os
 import hashlib
-import time
-from datetime import datetime
-from pathlib import Path
 from playwright.sync_api import Page, expect
 from test_ui.db_reset_enhanced import enhanced_reset_for_testing
 
@@ -31,9 +28,9 @@ class TestComposePageBaseline:
     PASSWORD = "test_SMSpass#12"
     
     # Test data for SMS sending
-    TEST_RECIPIENTS = ["1234 5678", "8765 4321"]  # Test phone numbers
+    TEST_RECIPIENTS = ["+85212345678", "+85287654321"]  # Test phone numbers in new format
     TEST_MESSAGE = "This is a test message from Playwright UI tests"
-    TEST_ENQUIRY_NUMBER = "9999 8888"
+    TEST_ENQUIRY_NUMBER = "9999 8888"  # Enquiry number format: 4 digits space 4 digits
     
     @pytest.fixture(scope="function", autouse=True)
     def setup_dirs(self):
@@ -545,7 +542,7 @@ class TestComposePageBaseline:
         self.take_baseline_screenshot(page, "cancel_button_start")
         
         # Fill some data
-        page.locator("#recipients").fill("1234 5678")
+        page.locator("#recipients").fill("+85212345678")
         page.locator("#content").fill("Test message")
         page.locator("#enquiry_number").fill("1234 5678")
         
@@ -628,7 +625,7 @@ class TestComposePageBaseline:
         self.take_baseline_screenshot(page, "minimal_start")
         
         # Fill form with minimal valid data
-        page.locator("#recipients").fill("1234 5678")
+        page.locator("#recipients").fill("+85212345678")
         page.locator("#content").fill("Test")
         page.locator("#enquiry_number").fill("1234 5678")
         
@@ -709,7 +706,7 @@ class TestComposePageBaseline:
             print("Autocomplete not implemented, testing basic input functionality")
             
             # Test typing multiple recipients
-            recipients_input.fill("1234 5678\n8765 4321\n9999 8888")
+            recipients_input.fill("+85212345678\n+85287654321\n+85299998888")
             page.wait_for_timeout(500)
             
             # Check input value
@@ -967,7 +964,7 @@ class TestComposePageBaseline:
         # Create a list of many phone numbers to test limits
         many_recipients = []
         for i in range(1, 101):  # Create 100 phone numbers
-            phone = f"{5000 + i:04d} {6000 + i:04d}"  # Format: 5001 6001, 5002 6002, etc.
+            phone = f"+852{5000 + i:04d}{6000 + i:04d}"  # Format: +85250016001, +85250026002, etc.
             many_recipients.append(phone)
         
         # Enter many recipients
@@ -1063,7 +1060,7 @@ class TestComposePageBaseline:
             self.take_baseline_screenshot(page, "length_warning")
         
         # Fill other required fields
-        page.locator("#recipients").fill("1234 5678")
+        page.locator("#recipients").fill("+85212345678")
         page.locator("#enquiry_number").fill("1234 5678")
         
         # Try to submit with long message
@@ -1100,7 +1097,7 @@ class TestComposePageBaseline:
         exact_limit_message = "A" * 160
         page.goto(self.COMPOSE_URL)
         page.locator("#content").fill(exact_limit_message)
-        page.locator("#recipients").fill("1234 5678")
+        page.locator("#recipients").fill("+85212345678")
         page.locator("#enquiry_number").fill("1234 5678")
         
         page.wait_for_timeout(500)

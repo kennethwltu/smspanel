@@ -103,7 +103,8 @@ class Message(db.Model):
     )  # See MessageJobStatus enum
     queue_position = db.Column(db.Integer, nullable=True)  # NULL when sending
     estimated_complete_at = db.Column(db.DateTime, nullable=True)
-
+    # Adhoc priority for immediate sending
+    adhoc = db.Column(db.Boolean, default=False, nullable=False, index=True)
     recipients = db.relationship(
         "Recipient", backref="message", lazy="dynamic", cascade="all, delete-orphan"
     )

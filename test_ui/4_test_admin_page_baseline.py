@@ -9,7 +9,6 @@ import re
 import os
 import hashlib
 from datetime import datetime
-from pathlib import Path
 from playwright.sync_api import Page, expect
 from test_ui.db_reset_enhanced import enhanced_reset_for_testing
 
@@ -1331,7 +1330,7 @@ class TestAdminPageBaseline:
         page = browser_page
         
         # Try to access admin users page without logging in
-        response = page.goto(self.ADMIN_USERS_URL)
+        page.goto(self.ADMIN_USERS_URL)
         self.take_baseline_screenshot(page, "admin_users_no_auth")
         
         # Should be redirected to login page
