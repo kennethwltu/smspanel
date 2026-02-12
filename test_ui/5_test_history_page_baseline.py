@@ -8,8 +8,6 @@ import pytest
 import re
 import os
 import hashlib
-from datetime import datetime
-from pathlib import Path
 from playwright.sync_api import Page, expect
 from test_ui.db_reset_enhanced import enhanced_reset_for_testing
 
@@ -520,7 +518,7 @@ class TestHistoryPageBaseline:
         page = browser_page
         
         # Try to access history page without logging in
-        response = page.goto(self.HISTORY_URL)
+        page.goto(self.HISTORY_URL)
         self.take_baseline_screenshot(page, "history_no_auth")
         
         # Should be redirected to login page
@@ -742,15 +740,13 @@ class TestHistoryPageBaseline:
                 status_badge = first_row.locator(".status")
                 timestamp = first_row.locator(".timestamp")
                 message_content = first_row.locator(".message-content")
-                recipients_list = first_row.locator(".recipients-list")
-                counts = first_row.locator(".counts")
-                
+
                 # Store message details for verification
                 status_text = status_badge.text_content()
                 timestamp_text = timestamp.text_content()
                 message_text = message_content.text_content()
                 
-                print(f"Message details from history table:")
+                print("Message details from history table:")
                 print(f"  Status: {status_text}")
                 print(f"  Time: {timestamp_text}")
                 print(f"  Message: {message_text[:50]}...")
@@ -799,7 +795,7 @@ class TestHistoryPageBaseline:
                 expect(detail_content).to_be_visible()
                 detail_content_text = detail_content.text_content()
                 assert detail_content_text == message_text, \
-                    f"Message content mismatch"
+                    "Message content mismatch"
                 
                 # Check other info rows
                 info_rows = message_info.locator(".info-row")

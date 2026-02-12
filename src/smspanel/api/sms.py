@@ -6,7 +6,7 @@ from smspanel import db
 from smspanel.models import User, Message, Recipient
 from smspanel.services.queue import get_task_queue
 from smspanel.utils.sms_helper import process_single_sms_task, process_bulk_sms_task
-from smspanel.utils.validation import validate_recipient_list, format_phone_error
+from smspanel.utils.validation import validate_recipient_list
 from smspanel.api.responses import (
     APIResponse,
     unauthorized,
@@ -69,6 +69,7 @@ def list_messages() -> tuple:
                     "created_at": m.created_at.isoformat(),
                     "recipient_count": m.recipient_count,
                     "recipients": [r.phone for r in m.recipients],
+                    "adhoc": m.adhoc,
                 }
                 for m in messages.items
             ],
@@ -87,6 +88,7 @@ def send_sms() -> tuple:
     Request body (JSON):
         recipient: str - Phone number (format: +85212345678)
         content: str - Message content
+        adhoc: bool - Optional, whether to send immediately (default: false)
 
     Returns:
         JSON response with message details (status will be 'pending').
@@ -98,6 +100,7 @@ def send_sms() -> tuple:
     data = request.get_json()
     recipient = data.get("recipient")
     content = data.get("content")
+    adhoc = data.get("adhoc", False)
 
     # Validate phone number format
     valid_recipients, invalid_numbers = validate_recipient_list([recipient])
@@ -112,8 +115,8 @@ def send_sms() -> tuple:
     # Extract the 8-digit part (without +852 prefix) for storage
     phone_digits = valid_recipients[0]
 
-    # Create message record
-    message = Message(user_id=user.id, content=content, status="pending")
+    # Create message record with adhoc flag
+    message = Message(user_id=user.id, content=content, status="pending", adhoc=adhoc)
     db.session.add(message)
     db.session.flush()
 
@@ -122,9 +125,11 @@ def send_sms() -> tuple:
     db.session.add(recipient_record)
     db.session.commit()
 
-    # Enqueue background task with 8-digit format
+    # Enqueue background task with priority based on adhoc flag
+    # Priority 0 for adhoc (highest), priority 1 for normal
     task_queue = get_task_queue()
-    enqueued = task_queue.enqueue(process_single_sms_task, message.id, phone_digits)
+    priority = 0 if adhoc else 1
+    enqueued = task_queue.enqueue(process_single_sms_task, message.id, phone_digits, priority=priority)
 
     if not enqueued:
         return service_unavailable()
@@ -135,6 +140,7 @@ def send_sms() -> tuple:
             "status": "pending",
             "recipient": recipient,  # Return original format with +852
             "content": content,
+            "adhoc": adhoc,
             "created_at": message.created_at.isoformat(),
         },
         message="SMS queued for sending",
@@ -150,6 +156,7 @@ def send_bulk_sms() -> tuple:
     Request body (JSON):
         recipients: list[str] - List of phone numbers (format: +85212345678)
         content: str - Message content
+        adhoc: bool - Optional, whether to send immediately (default: false)
 
     Returns:
         JSON response with message details (status will be 'pending').
@@ -161,6 +168,7 @@ def send_bulk_sms() -> tuple:
     data = request.get_json()
     recipients = data.get("recipients", [])
     content = data.get("content")
+    adhoc = data.get("adhoc", False)
 
     # Additional validation for non-empty recipients list
     if not recipients:
@@ -176,8 +184,8 @@ def send_bulk_sms() -> tuple:
             "INVALID_PHONE_FORMAT"
         )
 
-    # Create message record
-    message = Message(user_id=user.id, content=content, status="pending")
+    # Create message record with adhoc flag
+    message = Message(user_id=user.id, content=content, status="pending", adhoc=adhoc)
     db.session.add(message)
     db.session.flush()
 
@@ -188,9 +196,11 @@ def send_bulk_sms() -> tuple:
 
     db.session.commit()
 
-    # Enqueue background task with 8-digit format
+    # Enqueue background task with priority based on adhoc flag
+    # Priority 0 for adhoc (highest), priority 1 for normal
     task_queue = get_task_queue()
-    enqueued = task_queue.enqueue(process_bulk_sms_task, message.id, valid_recipients)
+    priority = 0 if adhoc else 1
+    enqueued = task_queue.enqueue(process_bulk_sms_task, message.id, valid_recipients, priority=priority)
 
     if not enqueued:
         return service_unavailable()
@@ -201,6 +211,7 @@ def send_bulk_sms() -> tuple:
             "status": "pending",
             "total": len(recipients),  # Return original count
             "content": content,
+            "adhoc": adhoc,
             "created_at": message.created_at.isoformat(),
         },
         message="Bulk SMS queued for sending",
@@ -242,6 +253,7 @@ def get_message(message_id: int) -> tuple:
             "estimated_complete_at": (
                 message.estimated_complete_at.isoformat() if message.estimated_complete_at else None
             ),
+            "adhoc": message.adhoc,
         }
     )
 
